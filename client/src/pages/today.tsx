@@ -11,7 +11,7 @@ import {
 import type { DailyScore, Supplement, SupplementLog, Meal } from "@shared/schema";
 
 export default function Today() {
-  const { user } = useUser();
+  const { user, setShowCoach } = useUser();
   const userId = user?.id || 1;
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -250,18 +250,25 @@ export default function Today() {
         </div>
 
         {/* ═══ ZONE 3: AI Coach (one insight, one action) ═══ */}
-        <div className="bg-card border border-primary/8 rounded-2xl p-4 mb-5 flex items-start gap-3">
+        <button
+          onClick={() => setShowCoach(true)}
+          className="w-full bg-card border border-primary/8 rounded-2xl p-4 mb-5 flex items-start gap-3 text-left hover:bg-primary/3 transition-colors"
+          data-testid="open-coach-card"
+        >
           <div className="w-8 h-8 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
             <Sparkles size={13} className="text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-foreground mb-0.5">AI Coach</p>
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-[11px] font-semibold text-foreground">AI Coach</p>
+              <span className="text-[7px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase tracking-wider">Tap to chat</span>
+            </div>
             <p className="text-[10px] text-muted-foreground leading-[1.6]">
               HRV trending up 15% this week. Bio age dropped 0.3yr since adding evening Ashwagandha.
               {score?.stressLevel === "High" ? " Consider a breathwork session at 2pm to manage cortisol." : " Keep up the current protocol."}
             </p>
           </div>
-        </div>
+        </button>
 
         {/* ═══ ZONE 4: Quick stats (horizontal, compact) ═══ */}
         <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 pb-2">

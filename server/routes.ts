@@ -3,6 +3,10 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertAssessmentSchema } from "@shared/schema";
 import { z } from "zod";
+import { generateCoachResponse } from "./ai-coach";
+
+// In-memory chat history per user
+const chatHistories: Map<number, { role: string; content: string }[]> = new Map();
 
 function today() {
   return new Date().toISOString().split("T")[0];
@@ -208,6 +212,42 @@ export async function registerRoutes(server: Server, app: Express) {
     const meal = await storage.updateMeal(parseInt(req.params.id), req.body);
     if (!meal) return res.status(404).json({ error: "Not found" });
     res.json(meal);
+  });
+
+  // ─── AI COACH CHAT ───
+  app.post("/api/chat/:userId", async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: "Message required" });
+
+    // Get or create chat history
+    if (!chatHistories.has(userId)) chatHistories.set(userId, []);
+    const history = chatHistories.get(userId)!;
+
+    // Generate response
+    const reply = await generateCoachResponse(userId, message, history);
+
+    // Update history
+    history.push({ role: "user", content: message });
+    history.push({ role: "assistant", content: reply });
+
+    // Keep last 20 messages
+    if (history.length > 20) {
+      chatHistories.set(userId, history.slice(-20));
+    }
+
+    res.json({ reply });
+  });
+
+  app.get("/api/chat/:userId/history", async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    res.json(chatHistories.get(userId) || []);
+  });
+
+  app.delete("/api/chat/:userId/history", async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    chatHistories.delete(userId);
+    res.json({ ok: true });
   });
 
   // ─── GOALS ───
