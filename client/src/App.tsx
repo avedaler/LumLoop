@@ -3,18 +3,13 @@ import { useHashLocation } from "wouter/use-hash-location";
 import { useState, useEffect, createContext, useContext } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "./lib/queryClient";
-import Welcome from "./pages/welcome";
-import Assessment from "./pages/assessment";
-import Dashboard from "./pages/dashboard";
-import DailyPlan from "./pages/daily-plan";
-import Supplements from "./pages/supplements";
-import Nutrition from "./pages/nutrition";
-import Marketplace from "./pages/marketplace";
-import Analytics from "./pages/analytics";
-import Membership from "./pages/membership";
-import Profile from "./pages/profile";
-import AppShell from "./components/app-shell";
+import Onboarding from "./pages/onboarding";
+import Today from "./pages/today";
+import Stack from "./pages/stack";
+import Insights from "./pages/insights";
+import ProfilePage from "./pages/profile-page";
 import NotFound from "./pages/not-found";
+import AppShell from "./components/app-shell";
 import type { User } from "@shared/schema";
 
 // ─── User Context ───
@@ -34,18 +29,16 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-primary text-sm">Loading LumLoop...</div>
+        <div className="animate-pulse text-primary text-sm font-medium">Loading...</div>
       </div>
     );
   }
 
-  // Show onboarding if no user or onboarding not complete
   if (!user || !user.onboardingComplete) {
     return (
       <Switch>
-        <Route path="/" component={Welcome} />
-        <Route path="/assessment" component={Assessment} />
-        <Route component={Welcome} />
+        <Route path="/" component={Onboarding} />
+        <Route component={Onboarding} />
       </Switch>
     );
   }
@@ -53,14 +46,10 @@ function AppContent() {
   return (
     <AppShell>
       <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/plan" component={DailyPlan} />
-        <Route path="/supplements" component={Supplements} />
-        <Route path="/nutrition" component={Nutrition} />
-        <Route path="/marketplace" component={Marketplace} />
-        <Route path="/analytics" component={Analytics} />
-        <Route path="/membership" component={Membership} />
-        <Route path="/profile" component={Profile} />
+        <Route path="/" component={Today} />
+        <Route path="/stack" component={Stack} />
+        <Route path="/insights" component={Insights} />
+        <Route path="/profile" component={ProfilePage} />
         <Route component={NotFound} />
       </Switch>
     </AppShell>
@@ -71,11 +60,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing session (stored in React state since localStorage is blocked)
-  useEffect(() => {
-    // No persisted session in sandbox — user registers fresh each visit
-    setLoading(false);
-  }, []);
+  useEffect(() => { setLoading(false); }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
