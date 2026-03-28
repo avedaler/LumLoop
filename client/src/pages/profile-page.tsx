@@ -121,7 +121,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Sign out */}
-        <button onClick={() => setUser(null)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-destructive/70 hover:bg-destructive/5 transition-colors" data-testid="button-signout">
+        <button onClick={async () => { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch(e) {} setUser(null); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-destructive/70 hover:bg-destructive/5 transition-colors" data-testid="button-signout">
           <LogOut size={15} />
           <span className="text-[11px] font-medium">Sign Out</span>
         </button>

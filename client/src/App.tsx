@@ -12,15 +12,12 @@ import NotFound from "./pages/not-found";
 import AppShell from "./components/app-shell";
 import type { User } from "@shared/schema";
 
-// ─── User Context ───
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   loading: boolean;
 }
-const UserContext = createContext<UserContextType>({
-  user: null, setUser: () => {}, loading: true
-});
+const UserContext = createContext<UserContextType>({ user: null, setUser: () => {}, loading: true });
 export const useUser = () => useContext(UserContext);
 
 function AppContent() {
@@ -29,7 +26,7 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-primary text-sm font-medium">Loading...</div>
+        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -60,7 +57,24 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { setLoading(false); }, []);
+  // Check for existing session via visitor ID (injected by deploy proxy)
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.id) {
+            setUser(data);
+          }
+        }
+      } catch (e) {
+        // No session — that's fine
+      }
+      setLoading(false);
+    }
+    checkSession();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
