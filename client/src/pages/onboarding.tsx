@@ -74,39 +74,41 @@ export default function Onboarding() {
   // ─── LOGIN MODE ───
   if (mode === "login") {
     return (
-      <div className="min-h-screen bg-background gradient-mesh flex flex-col px-6 pt-20 pb-8">
-        <div className="text-center mb-8 animate-fade-in-up">
-          <LumLoopLogo size={40} className="mx-auto mb-4" />
-          <h1 className="font-serif text-2xl font-medium text-foreground tracking-tight">Welcome back</h1>
-          <p className="text-[11px] text-muted-foreground mt-1">Sign in with your email</p>
-        </div>
+      <div className="min-h-screen bg-background gradient-mesh flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-[480px]">
+          <div className="bg-card border border-border/40 rounded-xl p-8">
+            <div className="text-center mb-8 animate-fade-in-up">
+              <LumLoopLogo size={40} className="mx-auto mb-4" />
+              <h1 className="font-serif text-2xl font-medium text-foreground tracking-tight">Welcome back</h1>
+              <p className="text-sm text-muted-foreground mt-1">Sign in with your email</p>
+            </div>
 
-        <div className="flex-1 max-w-sm mx-auto w-full">
-          <div className="mb-5">
-            <label className="text-[9px] text-muted-foreground uppercase tracking-[0.15em] font-bold block mb-1.5">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="daler@lumloop.com"
-              className="w-full bg-card border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
-              data-testid="login-email"
-            />
+            <div className="mb-5">
+              <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder="daler@lumloop.com"
+                className="w-full bg-background border border-border/50 rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
+                data-testid="login-email"
+              />
+            </div>
+
+            {error && <p className="text-sm text-destructive mb-3 text-center">{error}</p>}
+
+            <button onClick={handleLogin} disabled={loading}
+              className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all mb-4"
+              data-testid="button-login"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+              {!loading && <ArrowRight size={16} />}
+            </button>
+
+            <button onClick={() => { setMode("register"); setError(""); }}
+              className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="switch-to-register"
+            >
+              Don't have an account? <span className="text-primary font-semibold">Create one</span>
+            </button>
           </div>
-
-          {error && <p className="text-xs text-destructive mb-3 text-center">{error}</p>}
-
-          <button onClick={handleLogin} disabled={loading}
-            className="w-full bg-primary text-primary-foreground py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-all mb-4"
-            data-testid="button-login"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-            {!loading && <ArrowRight size={16} />}
-          </button>
-
-          <button onClick={() => { setMode("register"); setError(""); }}
-            className="w-full text-center text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            data-testid="switch-to-register"
-          >
-            Don't have an account? <span className="text-primary font-semibold">Create one</span>
-          </button>
         </div>
       </div>
     );
@@ -114,68 +116,70 @@ export default function Onboarding() {
 
   // ─── REGISTER MODE ───
   return (
-    <div className="min-h-screen bg-background gradient-mesh flex flex-col px-6 pt-12 pb-8">
-      <div className="text-center mb-6 animate-fade-in-up">
-        <LumLoopLogo size={40} className="mx-auto mb-3" />
-        <h1 className="font-serif text-2xl font-medium text-foreground tracking-tight">LumLoop</h1>
-        <p className="text-[11px] text-muted-foreground mt-1">Your AI wellness operating system</p>
-      </div>
-
-      <div className="flex-1 stagger-children max-w-sm mx-auto w-full">
-        <div className="mb-3">
-          <label className="text-[9px] text-muted-foreground uppercase tracking-[0.15em] font-bold block mb-1.5">Your Name</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Daler" autoComplete="name"
-            className="w-full bg-card border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
-            data-testid="input-name"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="text-[9px] text-muted-foreground uppercase tracking-[0.15em] font-bold block mb-1.5">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="daler@lumloop.com" autoComplete="email"
-            className="w-full bg-card border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
-            data-testid="input-email"
-          />
-        </div>
-
-        <div className="mb-5">
-          <label className="text-[9px] text-muted-foreground uppercase tracking-[0.15em] font-bold block mb-2">What matters most to you?</label>
-          <div className="grid grid-cols-2 gap-2">
-            {goals.map((g) => {
-              const isSelected = selectedGoal === g.id;
-              return (
-                <button key={g.id} onClick={() => setSelectedGoal(g.id)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all text-left ${
-                    isSelected ? "border-primary bg-primary/5" : `${g.bg} hover:border-primary/20`
-                  }`}
-                  data-testid={`goal-${g.id.toLowerCase().replace(/\s/g, "-")}`}
-                >
-                  <g.icon size={14} className={isSelected ? "text-primary" : g.color} />
-                  <span className={`text-[10px] font-medium ${isSelected ? "text-primary" : "text-foreground/80"}`}>{g.id}</span>
-                </button>
-              );
-            })}
+    <div className="min-h-screen bg-background gradient-mesh flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-[480px]">
+        <div className="bg-card border border-border/40 rounded-xl p-8">
+          <div className="text-center mb-6 animate-fade-in-up">
+            <LumLoopLogo size={40} className="mx-auto mb-3" />
+            <h1 className="font-serif text-2xl font-medium text-foreground tracking-tight">LumLoop</h1>
+            <p className="text-sm text-muted-foreground mt-1">Your AI wellness operating system</p>
           </div>
+
+          <div className="mb-4">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">Your Name</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder="Daler" autoComplete="name"
+              className="w-full bg-background border border-border/50 rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
+              data-testid="input-name"
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder="daler@lumloop.com" autoComplete="email"
+              className="w-full bg-background border border-border/50 rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
+              data-testid="input-email"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">What matters most to you?</label>
+            <div className="grid grid-cols-2 gap-2">
+              {goals.map((g) => {
+                const isSelected = selectedGoal === g.id;
+                return (
+                  <button key={g.id} onClick={() => setSelectedGoal(g.id)}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border transition-all text-left ${
+                      isSelected ? "border-primary bg-primary/5" : `${g.bg} hover:border-primary/20`
+                    }`}
+                    data-testid={`goal-${g.id.toLowerCase().replace(/\s/g, "-")}`}
+                  >
+                    <g.icon size={16} className={isSelected ? "text-primary" : g.color} />
+                    <span className={`text-xs font-medium ${isSelected ? "text-primary" : "text-foreground/80"}`}>{g.id}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-destructive mb-3 text-center">{error}</p>}
+
+          <button onClick={handleRegister} disabled={loading}
+            className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all mb-4"
+            data-testid="button-start"
+          >
+            {loading ? "Building your protocol..." : "Start My Protocol"}
+            {!loading && <ArrowRight size={16} />}
+          </button>
+
+          <button onClick={() => { setMode("login"); setError(""); }}
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="switch-to-login"
+          >
+            Already have an account? <span className="text-primary font-semibold">Sign in</span>
+          </button>
         </div>
-
-        {error && <p className="text-xs text-destructive mb-3 text-center">{error}</p>}
-
-        <button onClick={handleRegister} disabled={loading}
-          className="w-full bg-primary text-primary-foreground py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-all mb-3"
-          data-testid="button-start"
-        >
-          {loading ? "Building your protocol..." : "Start My Protocol"}
-          {!loading && <ArrowRight size={16} />}
-        </button>
-
-        <button onClick={() => { setMode("login"); setError(""); }}
-          className="w-full text-center text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-          data-testid="switch-to-login"
-        >
-          Already have an account? <span className="text-primary font-semibold">Sign in</span>
-        </button>
       </div>
     </div>
   );

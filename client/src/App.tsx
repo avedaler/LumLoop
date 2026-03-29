@@ -11,7 +11,6 @@ import ProfilePage from "./pages/profile-page";
 import Coach from "./pages/coach";
 import NotFound from "./pages/not-found";
 import AppShell from "./components/app-shell";
-import { Sparkles } from "lucide-react";
 import type { User } from "@shared/schema";
 
 interface UserContextType {
@@ -56,19 +55,19 @@ function AppContent() {
         </Switch>
       </AppShell>
 
-      {/* Floating AI Coach Button */}
-      {!showCoach && (
-        <button
-          onClick={() => setShowCoach(true)}
-          className="fixed bottom-[88px] right-4 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:opacity-90 active:scale-95 transition-all glow-sage"
-          data-testid="open-coach"
-        >
-          <Sparkles size={20} />
-        </button>
+      {/* Coach slide-over panel from right */}
+      {showCoach && (
+        <>
+          <div
+            className="fixed inset-0 z-[90] bg-black/40"
+            onClick={() => setShowCoach(false)}
+            data-testid="coach-overlay-backdrop"
+          />
+          <div className="fixed top-0 right-0 z-[100] h-screen w-full max-w-md shadow-2xl animate-in slide-in-from-right duration-200">
+            <Coach onClose={() => setShowCoach(false)} />
+          </div>
+        </>
       )}
-
-      {/* Coach overlay */}
-      {showCoach && <Coach onClose={() => setShowCoach(false)} />}
     </>
   );
 }
