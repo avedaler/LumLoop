@@ -4,6 +4,7 @@ import { eq, and, desc } from "drizzle-orm";
 import {
   users, assessments, dailyScores, supplements, supplementLogs, meals, wellnessGoals,
   dailyCheckins, agentActions, dailyProtocols, weeklyReviews, healthMetrics, biomarkers,
+  protocolAdjustments, supplementEffectiveness, subscriptions, notificationPreferences,
 } from "@shared/schema";
 import type {
   User, InsertUser,
@@ -19,6 +20,10 @@ import type {
   WeeklyReview, InsertWeeklyReview,
   HealthMetric, InsertHealthMetric,
   Biomarker, InsertBiomarker,
+  ProtocolAdjustment, InsertProtocolAdjustment,
+  SupplementEffectiveness, InsertSupplementEffectiveness,
+  Subscription, InsertSubscription,
+  NotificationPreferences, InsertNotificationPreferences,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -86,8 +91,37 @@ export interface IStorage {
   // Daily Score upsert
   upsertDailyScore(data: InsertDailyScore): Promise<DailyScore>;
 
+  // Protocol Adjustments
+  createProtocolAdjustment(data: InsertProtocolAdjustment): Promise<ProtocolAdjustment>;
+  getProtocolAdjustments(userId: number, limit?: number): Promise<ProtocolAdjustment[]>;
+  updateProtocolAdjustment(id: number, accepted: boolean): Promise<ProtocolAdjustment | undefined>;
+
+  // Supplement Effectiveness
+  createSupplementEffectiveness(data: InsertSupplementEffectiveness): Promise<SupplementEffectiveness>;
+  getSupplementEffectiveness(userId: number): Promise<SupplementEffectiveness[]>;
+  getLatestEffectiveness(userId: number, supplementId: number): Promise<SupplementEffectiveness | undefined>;
+
+  // Subscriptions
+  getSubscription(userId: number): Promise<Subscription | undefined>;
+  createSubscription(data: InsertSubscription): Promise<Subscription>;
+  updateSubscription(id: number, data: Partial<InsertSubscription>): Promise<Subscription | undefined>;
+
+  // Notification Preferences
+  getNotificationPreferences(userId: number): Promise<NotificationPreferences | undefined>;
+  upsertNotificationPreferences(data: InsertNotificationPreferences): Promise<NotificationPreferences>;
+
+  // Deactivate supplement
+  deactivateSupplement(id: number): Promise<Supplement | undefined>;
+
+  // All supplement logs for a user in a date range
+  getSupplementLogsRange(userId: number, startDate: string, endDate: string): Promise<SupplementLog[]>;
+
   // All Users
   getAllUsers(): Promise<User[]>;
+
+  // Admin stats
+  getUserCount(): Promise<number>;
+  getRecentUsers(limit: number): Promise<User[]>;
 }
 
 const sqlite = new Database("lumloop.db");
@@ -246,6 +280,55 @@ sqlite.exec(`
     status TEXT,
     notes TEXT,
     created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS protocol_adjustments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    adjustment_type TEXT NOT NULL,
+    target_name TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    reasoning TEXT NOT NULL,
+    accepted INTEGER,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS supplement_effectiveness (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    supplement_id INTEGER NOT NULL,
+    week_start TEXT NOT NULL,
+    adherence_rate REAL,
+    correlated_metric TEXT,
+    metric_before REAL,
+    metric_after REAL,
+    effectiveness_score INTEGER,
+    notes TEXT,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    plan TEXT NOT NULL,
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    status TEXT DEFAULT 'active',
+    current_period_end INTEGER,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS notification_preferences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    email_briefing INTEGER DEFAULT 1,
+    email_weekly_review INTEGER DEFAULT 1,
+    supplement_reminders INTEGER DEFAULT 1,
+    checkin_reminders INTEGER DEFAULT 1,
+    anomaly_alerts INTEGER DEFAULT 1,
+    timezone TEXT DEFAULT 'Asia/Kuala_Lumpur'
   );
 
   CREATE TABLE IF NOT EXISTS weekly_reviews (
@@ -498,9 +581,96 @@ class SqliteStorage implements IStorage {
     return db.insert(dailyScores).values(data).returning().get();
   }
 
+  // Protocol Adjustments
+  async createProtocolAdjustment(data: InsertProtocolAdjustment): Promise<ProtocolAdjustment> {
+    return db.insert(protocolAdjustments).values({ ...data, createdAt: new Date() }).returning().get();
+  }
+
+  async getProtocolAdjustments(userId: number, limit = 20): Promise<ProtocolAdjustment[]> {
+    return db.select().from(protocolAdjustments)
+      .where(eq(protocolAdjustments.userId, userId))
+      .orderBy(desc(protocolAdjustments.createdAt))
+      .limit(limit).all();
+  }
+
+  async updateProtocolAdjustment(id: number, accepted: boolean): Promise<ProtocolAdjustment | undefined> {
+    const rows = db.update(protocolAdjustments).set({ accepted }).where(eq(protocolAdjustments.id, id)).returning().all();
+    return rows[0];
+  }
+
+  // Supplement Effectiveness
+  async createSupplementEffectiveness(data: InsertSupplementEffectiveness): Promise<SupplementEffectiveness> {
+    return db.insert(supplementEffectiveness).values({ ...data, createdAt: new Date() }).returning().get();
+  }
+
+  async getSupplementEffectiveness(userId: number): Promise<SupplementEffectiveness[]> {
+    return db.select().from(supplementEffectiveness)
+      .where(eq(supplementEffectiveness.userId, userId))
+      .orderBy(desc(supplementEffectiveness.createdAt))
+      .all();
+  }
+
+  async getLatestEffectiveness(userId: number, supplementId: number): Promise<SupplementEffectiveness | undefined> {
+    return db.select().from(supplementEffectiveness)
+      .where(and(eq(supplementEffectiveness.userId, userId), eq(supplementEffectiveness.supplementId, supplementId)))
+      .orderBy(desc(supplementEffectiveness.weekStart))
+      .get();
+  }
+
+  // Subscriptions
+  async getSubscription(userId: number): Promise<Subscription | undefined> {
+    return db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).get();
+  }
+
+  async createSubscription(data: InsertSubscription): Promise<Subscription> {
+    return db.insert(subscriptions).values({ ...data, createdAt: new Date() }).returning().get();
+  }
+
+  async updateSubscription(id: number, data: any): Promise<Subscription | undefined> {
+    const rows = db.update(subscriptions).set(data).where(eq(subscriptions.id, id)).returning().all();
+    return rows[0];
+  }
+
+  // Notification Preferences
+  async getNotificationPreferences(userId: number): Promise<NotificationPreferences | undefined> {
+    return db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, userId)).get();
+  }
+
+  async upsertNotificationPreferences(data: InsertNotificationPreferences): Promise<NotificationPreferences> {
+    const existing = await this.getNotificationPreferences(data.userId);
+    if (existing) {
+      const rows = db.update(notificationPreferences).set(data).where(eq(notificationPreferences.id, existing.id)).returning().all();
+      return rows[0];
+    }
+    return db.insert(notificationPreferences).values(data).returning().get();
+  }
+
+  // Deactivate supplement
+  async deactivateSupplement(id: number): Promise<Supplement | undefined> {
+    const rows = db.update(supplements).set({ active: false }).where(eq(supplements.id, id)).returning().all();
+    return rows[0];
+  }
+
+  // Supplement logs in date range
+  async getSupplementLogsRange(userId: number, startDate: string, endDate: string): Promise<SupplementLog[]> {
+    return db.select().from(supplementLogs)
+      .where(eq(supplementLogs.userId, userId))
+      .all()
+      .filter(l => l.date >= startDate && l.date <= endDate);
+  }
+
   // All Users
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users).all();
+  }
+
+  // Admin stats
+  async getUserCount(): Promise<number> {
+    return db.select().from(users).all().length;
+  }
+
+  async getRecentUsers(limit: number): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt)).limit(limit).all();
   }
 }
 

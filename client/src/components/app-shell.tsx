@@ -4,8 +4,11 @@ import { useUser } from "../App";
 import LumLoopLogo from "./lumloop-logo";
 import {
   Sparkles, Pill, BarChart3, User, ClipboardCheck, Activity, TestTube2,
+  CreditCard, Shield,
   PanelLeftClose, PanelLeft, Menu, X,
 } from "lucide-react";
+
+const ADMIN_EMAILS = ["avedaler@gmail.com", "daler@teiza.com"];
 
 const navItems = [
   { path: "/", icon: Sparkles, label: "Today" },
@@ -15,6 +18,7 @@ const navItems = [
   { path: "/checkin", icon: ClipboardCheck, label: "Check-in" },
   { path: "/data", icon: Activity, label: "Log Data" },
   { path: "/biomarkers", icon: TestTube2, label: "Biomarkers" },
+  { path: "/pricing", icon: CreditCard, label: "Pricing" },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -96,6 +100,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {/* Admin nav — only for admin users */}
+          {user?.email && ADMIN_EMAILS.includes(user.email) && (
+            <Link href="/admin">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className={`w-full flex items-center gap-3 rounded-lg transition-colors ${
+                  collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2"
+                } ${
+                  location === "/admin"
+                    ? "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-primary))]"
+                    : "text-[hsl(var(--sidebar-foreground))]/60 hover:text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]/50"
+                }`}
+                data-testid="nav-admin"
+              >
+                <Shield size={18} strokeWidth={location === "/admin" ? 2 : 1.5} />
+                {!collapsed && (
+                  <span className={`text-sm ${location === "/admin" ? "font-semibold" : "font-medium"}`}>
+                    Admin
+                  </span>
+                )}
+              </button>
+            </Link>
+          )}
 
           {/* AI Coach button */}
           <button

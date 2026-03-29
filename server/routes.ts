@@ -224,6 +224,26 @@ export async function registerRoutes(server: Server, app: Express) {
     } catch (e: any) { res.status(400).json({ error: e.message }); }
   });
 
+  app.patch("/api/supplements/:id", async (req, res) => {
+    try {
+      const supp = await storage.updateSupplement(parseInt(req.params.id), req.body);
+      if (!supp) return res.status(404).json({ error: "Not found" });
+      res.json(supp);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.delete("/api/supplements/:id", async (req, res) => {
+    try {
+      const supp = await storage.deactivateSupplement(parseInt(req.params.id));
+      if (!supp) return res.status(404).json({ error: "Not found" });
+      res.json(supp);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.get("/api/supplement-effectiveness/:userId", async (req, res) => {
+    res.json(await storage.getSupplementEffectiveness(parseInt(req.params.userId)));
+  });
+
   // ─── SUPPLEMENT LOGS ───
   app.get("/api/supplement-logs/:userId/:date", async (req, res) => {
     res.json(await storage.getSupplementLogs(parseInt(req.params.userId), req.params.date));
@@ -514,6 +534,142 @@ export async function registerRoutes(server: Server, app: Express) {
       stressLevel: null,
     });
   }
+
+  // ─── SUBSCRIPTIONS ───
+  app.get("/api/subscription/plans", async (_req, res) => {
+    res.json([
+      { id: "free", name: "Free", price: 0, features: ["Basic dashboard", "Manual health entry", "6 supplement slots", "Daily check-ins"] },
+      { id: "essential", name: "Essential", price: 29, features: ["Everything in Free", "AI protocol adjustments", "Biomarker analysis", "Effectiveness scoring", "Email briefings"] },
+      { id: "premium", name: "Premium", price: 79, features: ["Everything in Essential", "Unlimited supplements", "AI meal estimation", "Advanced bio age analytics", "Priority coach responses"] },
+      { id: "concierge", name: "Concierge", price: 249, features: ["Everything in Premium", "Dedicated wellness advisor", "Custom lab panel design", "Monthly video check-in", "Supplement sourcing"] },
+    ]);
+  });
+
+  app.get("/api/subscription/:userId", async (req, res) => {
+    const sub = await storage.getSubscription(parseInt(req.params.userId));
+    res.json(sub || { plan: "free", status: "active" });
+  });
+
+  app.post("/api/subscription/checkout", async (req, res) => {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.json({ url: null, message: "Payments coming soon" });
+    }
+    try {
+      const Stripe = (await import("stripe")).default;
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      const { userId, plan } = req.body;
+      const priceMap: Record<string, string> = {
+        essential: process.env.STRIPE_PRICE_ESSENTIAL || "",
+        premium: process.env.STRIPE_PRICE_PREMIUM || "",
+        concierge: process.env.STRIPE_PRICE_CONCIERGE || "",
+      };
+      if (!priceMap[plan]) return res.status(400).json({ error: "Invalid plan" });
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        line_items: [{ price: priceMap[plan], quantity: 1 }],
+        success_url: `${req.headers.origin || ""}/#/profile?checkout=success`,
+        cancel_url: `${req.headers.origin || ""}/#/pricing`,
+        metadata: { userId: String(userId), plan },
+      });
+      res.json({ url: session.url });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post("/api/subscription/webhook", async (req, res) => {
+    if (!process.env.STRIPE_SECRET_KEY) return res.json({ ok: true });
+    try {
+      const { type, data } = req.body;
+      if (type === "checkout.session.completed") {
+        const userId = parseInt(data?.object?.metadata?.userId);
+        const plan = data?.object?.metadata?.plan;
+        if (userId && plan) {
+          const existing = await storage.getSubscription(userId);
+          if (existing) {
+            await storage.updateSubscription(existing.id, { plan, status: "active", stripeSubscriptionId: data?.object?.subscription });
+          } else {
+            await storage.createSubscription({ userId, plan, status: "active", stripeCustomerId: data?.object?.customer, stripeSubscriptionId: data?.object?.subscription, currentPeriodEnd: null });
+          }
+        }
+      }
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // ─── PROTOCOL ADJUSTMENTS ───
+  app.get("/api/protocol-adjustments/:userId", async (req, res) => {
+    res.json(await storage.getProtocolAdjustments(parseInt(req.params.userId)));
+  });
+
+  app.patch("/api/protocol-adjustments/:id", async (req, res) => {
+    const adj = await storage.updateProtocolAdjustment(parseInt(req.params.id), req.body.accepted);
+    if (!adj) return res.status(404).json({ error: "Not found" });
+    res.json(adj);
+  });
+
+  // ─── NOTIFICATION PREFERENCES ───
+  app.get("/api/notifications/:userId", async (req, res) => {
+    const prefs = await storage.getNotificationPreferences(parseInt(req.params.userId));
+    res.json(prefs || {
+      userId: parseInt(req.params.userId), emailBriefing: true, emailWeeklyReview: true,
+      supplementReminders: true, checkinReminders: true, anomalyAlerts: true, timezone: "Asia/Kuala_Lumpur",
+    });
+  });
+
+  app.put("/api/notifications/:userId", async (req, res) => {
+    try {
+      const prefs = await storage.upsertNotificationPreferences({ userId: parseInt(req.params.userId), ...req.body });
+      res.json(prefs);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // ─── ADMIN ───
+  const ADMIN_EMAILS = ["avedaler@gmail.com", "daler@teiza.com"];
+
+  app.get("/api/admin/stats", async (req, res) => {
+    const allUsers = await storage.getAllUsers();
+    const totalUsers = allUsers.length;
+
+    const now = new Date();
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAgoStr = weekAgo.toISOString().split("T")[0];
+
+    const recentSignups = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= weekAgo).length;
+
+    // Count various entities
+    let totalCheckins = 0, totalSupplements = 0, totalMeals = 0;
+    const subBreakdown: Record<string, number> = { free: 0, essential: 0, premium: 0, concierge: 0 };
+    let agentActionsToday = 0, agentActionsWeek = 0;
+    const todayDate = today();
+
+    for (const u of allUsers) {
+      const sub = await storage.getSubscription(u.id);
+      const plan = sub?.plan || "free";
+      subBreakdown[plan] = (subBreakdown[plan] || 0) + 1;
+    }
+
+    // Rough counts — just use all users' supplements & recent actions
+    for (const u of allUsers) {
+      const supps = await storage.getSupplements(u.id);
+      totalSupplements += supps.length;
+      const actions = await storage.getAgentActions(u.id, 50);
+      agentActionsToday += actions.filter(a => a.date === todayDate).length;
+      agentActionsWeek += actions.filter(a => a.date >= weekAgoStr).length;
+    }
+
+    res.json({
+      totalUsers, recentSignups, totalCheckins, totalSupplements, totalMeals,
+      subscriptionBreakdown: subBreakdown, agentActionsToday, agentActionsWeek,
+    });
+  });
+
+  app.get("/api/admin/users", async (req, res) => {
+    const recentUsers = await storage.getRecentUsers(20);
+    const safeUsers = recentUsers.map(u => {
+      const { passwordHash, ...safe } = u;
+      return safe;
+    });
+    res.json(safeUsers);
+  });
 
   // ─── WAITLIST ───
   const waitlistEmails: Set<string> = new Set();

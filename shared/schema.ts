@@ -214,6 +214,75 @@ export const insertBiomarkerSchema = createInsertSchema(biomarkers).omit({ id: t
 export type InsertBiomarker = z.infer<typeof insertBiomarkerSchema>;
 export type Biomarker = typeof biomarkers.$inferSelect;
 
+// ─── PROTOCOL ADJUSTMENTS (AI-recommended changes) ───
+export const protocolAdjustments = sqliteTable("protocol_adjustments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  date: text("date").notNull(),
+  adjustmentType: text("adjustment_type").notNull(),
+  targetName: text("target_name").notNull(),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  reasoning: text("reasoning").notNull(),
+  accepted: integer("accepted", { mode: "boolean" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertProtocolAdjustmentSchema = createInsertSchema(protocolAdjustments).omit({ id: true, createdAt: true });
+export type InsertProtocolAdjustment = z.infer<typeof insertProtocolAdjustmentSchema>;
+export type ProtocolAdjustment = typeof protocolAdjustments.$inferSelect;
+
+// ─── SUPPLEMENT EFFECTIVENESS (weekly scoring) ───
+export const supplementEffectiveness = sqliteTable("supplement_effectiveness", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  supplementId: integer("supplement_id").notNull(),
+  weekStart: text("week_start").notNull(),
+  adherenceRate: real("adherence_rate"),
+  correlatedMetric: text("correlated_metric"),
+  metricBefore: real("metric_before"),
+  metricAfter: real("metric_after"),
+  effectivenessScore: integer("effectiveness_score"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertSupplementEffectivenessSchema = createInsertSchema(supplementEffectiveness).omit({ id: true, createdAt: true });
+export type InsertSupplementEffectiveness = z.infer<typeof insertSupplementEffectivenessSchema>;
+export type SupplementEffectiveness = typeof supplementEffectiveness.$inferSelect;
+
+// ─── SUBSCRIPTIONS ───
+export const subscriptions = sqliteTable("subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  plan: text("plan").notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  status: text("status").default("active"),
+  currentPeriodEnd: integer("current_period_end", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true });
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+
+// ─── NOTIFICATION PREFERENCES ───
+export const notificationPreferences = sqliteTable("notification_preferences", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().unique(),
+  emailBriefing: integer("email_briefing", { mode: "boolean" }).default(true),
+  emailWeeklyReview: integer("email_weekly_review", { mode: "boolean" }).default(true),
+  supplementReminders: integer("supplement_reminders", { mode: "boolean" }).default(true),
+  checkinReminders: integer("checkin_reminders", { mode: "boolean" }).default(true),
+  anomalyAlerts: integer("anomaly_alerts", { mode: "boolean" }).default(true),
+  timezone: text("timezone").default("Asia/Kuala_Lumpur"),
+});
+
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({ id: true });
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+
 // ─── WEEKLY REVIEWS (AI weekly analysis) ───
 export const weeklyReviews = sqliteTable("weekly_reviews", {
   id: integer("id").primaryKey({ autoIncrement: true }),

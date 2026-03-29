@@ -145,8 +145,13 @@ async function checkReminders() {
 
   for (const user of users) {
     try {
+      // Check notification preferences
+      const prefs = await storage.getNotificationPreferences(user.id);
+      const suppReminders = prefs?.supplementReminders !== false;
+      const checkinReminders = prefs?.checkinReminders !== false;
+
       // Morning supplements (around 7am — check hour 23 UTC for UTC+8, or just run at varying hours)
-      if (hour === 7 || hour === 23) {
+      if (suppReminders && (hour === 7 || hour === 23)) {
         const recentActions = await storage.getAgentActions(user.id, 5);
         const alreadySent = recentActions.some(a => a.date === today && a.actionType === "reminder_sent" && a.title.includes("Morning"));
         if (!alreadySent) {
@@ -161,7 +166,7 @@ async function checkReminders() {
       }
 
       // Evening supplements (around 8pm)
-      if (hour === 12 || hour === 20) {
+      if (suppReminders && (hour === 12 || hour === 20)) {
         const recentActions = await storage.getAgentActions(user.id, 5);
         const alreadySent = recentActions.some(a => a.date === today && a.actionType === "reminder_sent" && a.title.includes("Evening"));
         if (!alreadySent) {
@@ -176,7 +181,7 @@ async function checkReminders() {
       }
 
       // Daily check-in prompt (around 9pm)
-      if (hour === 13 || hour === 21) {
+      if (checkinReminders && (hour === 13 || hour === 21)) {
         const recentActions = await storage.getAgentActions(user.id, 5);
         const alreadySent = recentActions.some(a => a.date === today && a.actionType === "reminder_sent" && a.title.includes("check-in"));
         if (!alreadySent) {
@@ -215,6 +220,10 @@ async function checkAnomalies(userId: number) {
   }
 
   if (recentHrv && avgHrv > 0 && recentHrv < avgHrv * 0.8) {
+    // Check anomaly alert preference
+    const prefs = await storage.getNotificationPreferences(userId);
+    if (prefs?.anomalyAlerts === false) return;
+
     const today = todayStr();
     const recentActions = await storage.getAgentActions(userId, 5);
     const alreadyDetected = recentActions.some(a => a.date === today && a.actionType === "anomaly_detected");
@@ -227,6 +236,144 @@ async function checkAnomalies(userId: number) {
         description: `Your HRV (${recentHrv}ms) is ${Math.round((1 - recentHrv! / avgHrv) * 100)}% below your 7-day average. Consider reducing training intensity today and prioritizing sleep tonight.`,
       });
     }
+  }
+}
+
+// ─── PROTOCOL ADJUSTMENTS (during weekly review) ───
+async function generateProtocolAdjustments(userId: number) {
+  const user = await storage.getUser(userId);
+  if (!user) return;
+
+  const today = todayStr();
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekStart = weekAgo.toISOString().split("T")[0];
+
+  const supplements = await storage.getSupplements(userId);
+  const logs = await storage.getSupplementLogsRange(userId, weekStart, today);
+  const metrics = await storage.getHealthMetrics(userId, 7);
+  const scores = await storage.getDailyScores(userId, 7);
+
+  // Calculate per-supplement adherence
+  for (const supp of supplements) {
+    const suppLogs = logs.filter(l => l.supplementId === supp.id);
+    const totalDays = 7;
+    const takenDays = suppLogs.filter(l => l.taken).length;
+    const adherence = totalDays > 0 ? (takenDays / totalDays) * 100 : 0;
+
+    // Low adherence → suggest timing change
+    if (adherence < 40) {
+      await storage.createProtocolAdjustment({
+        userId, date: today, adjustmentType: "change_timing",
+        targetName: supp.name, oldValue: supp.timing,
+        newValue: supp.timing === "Morning" ? "Evening" : "Morning",
+        reasoning: `You've only taken ${supp.name} ${takenDays} of 7 days (${Math.round(adherence)}%). Switching timing may improve adherence.`,
+        accepted: null,
+      });
+    }
+  }
+
+  // HRV dropping → suggest magnesium increase
+  if (metrics.length >= 3) {
+    const recentHrvs = metrics.filter(m => m.hrv != null).map(m => m.hrv!);
+    if (recentHrvs.length >= 3) {
+      const trend = recentHrvs[0] - recentHrvs[recentHrvs.length - 1];
+      if (trend < -5) {
+        const magSupp = supplements.find(s => s.name.toLowerCase().includes("magnesium"));
+        if (magSupp) {
+          await storage.createProtocolAdjustment({
+            userId, date: today, adjustmentType: "modify_dose",
+            targetName: magSupp.name, oldValue: magSupp.dose,
+            newValue: "2,500 mg",
+            reasoning: `HRV has been declining this week. Increasing magnesium may support parasympathetic recovery.`,
+            accepted: null,
+          });
+        }
+      }
+    }
+  }
+
+  // Sleep quality declining → suggest ashwagandha dose increase
+  if (scores.length >= 3) {
+    const recentSleep = scores.filter(s => s.sleepHours != null).map(s => s.sleepHours!);
+    if (recentSleep.length >= 3 && recentSleep[0] < 6.5) {
+      const ashwa = supplements.find(s => s.name.toLowerCase().includes("ashwagandha"));
+      if (ashwa) {
+        await storage.createProtocolAdjustment({
+          userId, date: today, adjustmentType: "modify_dose",
+          targetName: ashwa.name, oldValue: ashwa.dose,
+          newValue: "900 mg",
+          reasoning: `Sleep has been below 6.5h recently. A higher dose of Ashwagandha may improve sleep onset.`,
+          accepted: null,
+        });
+      }
+    }
+  }
+
+  // Log the action
+  await storage.createAgentAction({
+    userId, date: today, actionType: "protocol_adjustment",
+    title: "Protocol adjustments generated",
+    description: `Analyzed your 7-day data and generated personalized protocol adjustment recommendations.`,
+  });
+}
+
+// ─── SUPPLEMENT EFFECTIVENESS SCORING ───
+async function calculateSupplementEffectiveness(userId: number) {
+  const supplements = await storage.getSupplements(userId);
+  const today = todayStr();
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekStart = weekAgo.toISOString().split("T")[0];
+
+  const logs = await storage.getSupplementLogsRange(userId, weekStart, today);
+  const metrics = await storage.getHealthMetrics(userId, 14);
+
+  // Split metrics into this week and previous week
+  const thisWeek = metrics.filter(m => m.date >= weekStart);
+  const prevWeek = metrics.filter(m => m.date < weekStart);
+
+  for (const supp of supplements) {
+    const suppLogs = logs.filter(l => l.supplementId === supp.id);
+    const totalDays = 7;
+    const takenDays = suppLogs.filter(l => l.taken).length;
+    const adherenceRate = totalDays > 0 ? Math.round((takenDays / totalDays) * 100) : 0;
+
+    // Determine correlated metric based on supplement category/name
+    let correlatedMetric = "hrv";
+    const nameLower = supp.name.toLowerCase();
+    if (nameLower.includes("magnesium") || nameLower.includes("ashwagandha")) correlatedMetric = "sleep";
+    else if (nameLower.includes("omega") || nameLower.includes("creatine")) correlatedMetric = "hrv";
+    else if (nameLower.includes("vitamin d") || nameLower.includes("nmn")) correlatedMetric = "energy";
+
+    // Get metric values
+    const getMetricVal = (m: any) => {
+      if (correlatedMetric === "sleep") return m.sleepHours;
+      if (correlatedMetric === "hrv") return m.hrv;
+      return null;
+    };
+
+    const thisWeekVals = thisWeek.map(getMetricVal).filter((v): v is number => v != null);
+    const prevWeekVals = prevWeek.map(getMetricVal).filter((v): v is number => v != null);
+
+    const metricAfter = thisWeekVals.length > 0 ? thisWeekVals.reduce((a, b) => a + b, 0) / thisWeekVals.length : null;
+    const metricBefore = prevWeekVals.length > 0 ? prevWeekVals.reduce((a, b) => a + b, 0) / prevWeekVals.length : null;
+
+    // Calculate effectiveness: adherence weight + metric improvement
+    let effectivenessScore = Math.min(adherenceRate, 100);
+    if (metricBefore != null && metricAfter != null && metricBefore > 0) {
+      const improvement = ((metricAfter - metricBefore) / metricBefore) * 100;
+      effectivenessScore = Math.round(Math.min(Math.max((adherenceRate * 0.6) + (improvement > 0 ? improvement * 4 : improvement * 2) + 40, 0), 100));
+    }
+
+    await storage.createSupplementEffectiveness({
+      userId, supplementId: supp.id, weekStart,
+      adherenceRate, correlatedMetric,
+      metricBefore: metricBefore != null ? Math.round(metricBefore * 10) / 10 : null,
+      metricAfter: metricAfter != null ? Math.round(metricAfter * 10) / 10 : null,
+      effectivenessScore,
+      notes: `${takenDays}/${totalDays} days taken. Correlated with ${correlatedMetric}.`,
+    });
   }
 }
 
@@ -248,12 +395,22 @@ export function initializeAgent() {
     try { await checkReminders(); } catch (e) { console.error("[agent] Reminder error:", e); }
   });
 
-  // Weekly review: Sunday 9:00 AM UTC+8 = 1:00 UTC
+  // Weekly review + adjustments: Sunday 9:00 AM UTC+8 = 1:00 UTC
   cron.schedule("0 1 * * 0", async () => {
-    console.log("[agent] Running weekly review...");
+    console.log("[agent] Running weekly review + adjustments...");
     const users = await storage.getAllUsers();
     for (const user of users) {
       try { await generateWeeklyReview(user.id); } catch (e) { console.error(`[agent] Weekly review error for user ${user.id}:`, e); }
+      try { await generateProtocolAdjustments(user.id); } catch (e) { console.error(`[agent] Adjustment error for user ${user.id}:`, e); }
+    }
+  });
+
+  // Weekly effectiveness scoring: Sunday 2:00 AM UTC
+  cron.schedule("0 2 * * 0", async () => {
+    console.log("[agent] Running supplement effectiveness scoring...");
+    const users = await storage.getAllUsers();
+    for (const user of users) {
+      try { await calculateSupplementEffectiveness(user.id); } catch (e) { console.error(`[agent] Effectiveness error for user ${user.id}:`, e); }
     }
   });
 

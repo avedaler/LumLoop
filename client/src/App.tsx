@@ -11,6 +11,8 @@ import ProfilePage from "./pages/profile-page";
 import Checkin from "./pages/checkin";
 import HealthData from "./pages/health-data";
 import BiomarkersPage from "./pages/biomarkers";
+import Pricing from "./pages/pricing";
+import Admin from "./pages/admin";
 import Coach from "./pages/coach";
 import NotFound from "./pages/not-found";
 import AppShell from "./components/app-shell";
@@ -57,6 +59,8 @@ function AppContent() {
           <Route path="/checkin" component={Checkin} />
           <Route path="/data" component={HealthData} />
           <Route path="/biomarkers" component={BiomarkersPage} />
+          <Route path="/pricing" component={Pricing} />
+          <Route path="/admin" component={Admin} />
           <Route component={NotFound} />
         </Switch>
       </AppShell>
