@@ -5,9 +5,10 @@ import { apiRequest, queryClient } from "../lib/queryClient";
 import ScoreRing from "../components/score-ring";
 import {
   Dna, TrendingDown, Sparkles, Moon, Zap, Heart, Brain,
-  Check, Pill, Utensils, Dumbbell, Wind, Sun, Clock
+  Check, Pill, Utensils, Dumbbell, Wind, Sun, Clock,
+  Bot, Mail, Bell, BarChart3, AlertTriangle,
 } from "lucide-react";
-import type { DailyScore, Supplement, SupplementLog, Meal } from "@shared/schema";
+import type { DailyScore, Supplement, SupplementLog, Meal, AgentAction } from "@shared/schema";
 
 export default function Today() {
   const { user, setShowCoach } = useUser();
@@ -29,6 +30,11 @@ export default function Today() {
   const { data: meals = [] } = useQuery<Meal[]>({
     queryKey: ["/api/meals", userId, todayStr],
     queryFn: async () => { const r = await apiRequest("GET", `/api/meals/${userId}/${todayStr}`); return r.json(); },
+  });
+
+  const { data: agentActions = [] } = useQuery<AgentAction[]>({
+    queryKey: ["/api/agent-actions", userId],
+    queryFn: async () => { const r = await apiRequest("GET", `/api/agent-actions/${userId}?limit=5`); return r.json(); },
   });
 
   const toggleSupp = useMutation({
@@ -341,9 +347,57 @@ export default function Today() {
                 ))}
               </div>
             </div>
+
+            {/* Agent Activity */}
+            {agentActions.length > 0 && (
+              <div className="bg-card border border-border/40 rounded-xl p-5" data-testid="agent-activity">
+                <div className="flex items-center gap-2 mb-4">
+                  <Bot size={14} className="text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Agent Activity</span>
+                </div>
+                <div className="space-y-3">
+                  {agentActions.slice(0, 5).map((action) => {
+                    const iconMap: Record<string, { icon: typeof Bot; color: string }> = {
+                      protocol_generated: { icon: Bot, color: "text-primary" },
+                      email_sent: { icon: Mail, color: "text-blue-400" },
+                      reminder_sent: { icon: Bell, color: "text-amber-400" },
+                      weekly_review: { icon: BarChart3, color: "text-purple-400" },
+                      anomaly_detected: { icon: AlertTriangle, color: "text-rose-400" },
+                    };
+                    const { icon: ActionIcon, color } = iconMap[action.actionType] || { icon: Bot, color: "text-muted-foreground" };
+                    const timeAgo = action.createdAt ? formatTimeAgo(new Date(action.createdAt)) : "";
+                    return (
+                      <div key={action.id} className="flex gap-3 items-start">
+                        <div className="w-7 h-7 rounded-md bg-secondary/50 flex items-center justify-center shrink-0 mt-0.5">
+                          <ActionIcon size={13} className={color} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground">{action.title}</p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{action.description}</p>
+                          {timeAgo && <p className="text-[10px] text-muted-foreground/50 mt-0.5">{timeAgo}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground/40 mt-3 text-center">Your AI wellness agent works in the background</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDays = Math.floor(diffHr / 24);
+  return `${diffDays}d ago`;
 }

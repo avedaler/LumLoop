@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useUser } from "../App";
 import LumLoopLogo from "./lumloop-logo";
 import {
-  Sparkles, Pill, BarChart3, User,
+  Sparkles, Pill, BarChart3, User, ClipboardCheck,
   PanelLeftClose, PanelLeft, Menu, X,
 } from "lucide-react";
 
@@ -12,6 +12,7 @@ const navItems = [
   { path: "/stack", icon: Pill, label: "Stack" },
   { path: "/insights", icon: BarChart3, label: "Insights" },
   { path: "/profile", icon: User, label: "Profile" },
+  { path: "/checkin", icon: ClipboardCheck, label: "Check-in" },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

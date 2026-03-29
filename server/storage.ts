@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import { eq, and, desc } from "drizzle-orm";
 import {
   users, assessments, dailyScores, supplements, supplementLogs, meals, wellnessGoals,
+  dailyCheckins, agentActions, dailyProtocols, weeklyReviews,
 } from "@shared/schema";
 import type {
   User, InsertUser,
@@ -12,6 +13,10 @@ import type {
   SupplementLog, InsertSupplementLog,
   Meal, InsertMeal,
   WellnessGoal, InsertWellnessGoal,
+  DailyCheckin, InsertDailyCheckin,
+  AgentAction, InsertAgentAction,
+  DailyProtocol, InsertDailyProtocol,
+  WeeklyReview, InsertWeeklyReview,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -49,6 +54,25 @@ export interface IStorage {
   getWellnessGoals(userId: number): Promise<WellnessGoal[]>;
   createWellnessGoal(data: InsertWellnessGoal): Promise<WellnessGoal>;
   updateWellnessGoal(id: number, data: Partial<InsertWellnessGoal>): Promise<WellnessGoal | undefined>;
+
+  // Daily Check-ins
+  getDailyCheckin(userId: number, date: string): Promise<DailyCheckin | undefined>;
+  createDailyCheckin(data: InsertDailyCheckin): Promise<DailyCheckin>;
+
+  // Agent Actions
+  getAgentActions(userId: number, limit?: number): Promise<AgentAction[]>;
+  createAgentAction(data: InsertAgentAction): Promise<AgentAction>;
+
+  // Daily Protocols
+  getDailyProtocol(userId: number, date: string): Promise<DailyProtocol | undefined>;
+  createDailyProtocol(data: InsertDailyProtocol): Promise<DailyProtocol>;
+
+  // Weekly Reviews
+  getWeeklyReview(userId: number, weekStart: string): Promise<WeeklyReview | undefined>;
+  createWeeklyReview(data: InsertWeeklyReview): Promise<WeeklyReview>;
+
+  // All Users
+  getAllUsers(): Promise<User[]>;
 }
 
 const sqlite = new Database("lumloop.db");
@@ -141,6 +165,50 @@ sqlite.exec(`
     goal_name TEXT NOT NULL,
     progress INTEGER DEFAULT 0,
     icon TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS daily_checkins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    sleep_quality INTEGER,
+    energy_level INTEGER,
+    mood INTEGER,
+    stress_level INTEGER,
+    notes TEXT,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS agent_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    metadata TEXT,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS daily_protocols (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    protocol TEXT NOT NULL,
+    reasoning TEXT,
+    generated_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS weekly_reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    week_start TEXT NOT NULL,
+    week_end TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    insights TEXT,
+    adjustments TEXT,
+    overall_score INTEGER,
+    created_at INTEGER
   );
 `);
 
@@ -267,6 +335,69 @@ class SqliteStorage implements IStorage {
   async updateWellnessGoal(id: number, data: Partial<InsertWellnessGoal>): Promise<WellnessGoal | undefined> {
     const rows = db.update(wellnessGoals).set(data).where(eq(wellnessGoals.id, id)).returning().all();
     return rows[0];
+  }
+
+  // Daily Check-ins
+  async getDailyCheckin(userId: number, date: string): Promise<DailyCheckin | undefined> {
+    return db.select().from(dailyCheckins)
+      .where(and(eq(dailyCheckins.userId, userId), eq(dailyCheckins.date, date)))
+      .get();
+  }
+
+  async createDailyCheckin(data: InsertDailyCheckin): Promise<DailyCheckin> {
+    return db.insert(dailyCheckins).values({
+      ...data,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  // Agent Actions
+  async getAgentActions(userId: number, limit = 20): Promise<AgentAction[]> {
+    return db.select().from(agentActions)
+      .where(eq(agentActions.userId, userId))
+      .orderBy(desc(agentActions.createdAt))
+      .limit(limit)
+      .all();
+  }
+
+  async createAgentAction(data: InsertAgentAction): Promise<AgentAction> {
+    return db.insert(agentActions).values({
+      ...data,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  // Daily Protocols
+  async getDailyProtocol(userId: number, date: string): Promise<DailyProtocol | undefined> {
+    return db.select().from(dailyProtocols)
+      .where(and(eq(dailyProtocols.userId, userId), eq(dailyProtocols.date, date)))
+      .get();
+  }
+
+  async createDailyProtocol(data: InsertDailyProtocol): Promise<DailyProtocol> {
+    return db.insert(dailyProtocols).values({
+      ...data,
+      generatedAt: new Date(),
+    }).returning().get();
+  }
+
+  // Weekly Reviews
+  async getWeeklyReview(userId: number, weekStart: string): Promise<WeeklyReview | undefined> {
+    return db.select().from(weeklyReviews)
+      .where(and(eq(weeklyReviews.userId, userId), eq(weeklyReviews.weekStart, weekStart)))
+      .get();
+  }
+
+  async createWeeklyReview(data: InsertWeeklyReview): Promise<WeeklyReview> {
+    return db.insert(weeklyReviews).values({
+      ...data,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  // All Users
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).all();
   }
 }
 

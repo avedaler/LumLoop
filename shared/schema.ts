@@ -122,3 +122,67 @@ export const wellnessGoals = sqliteTable("wellness_goals", {
 export const insertWellnessGoalSchema = createInsertSchema(wellnessGoals).omit({ id: true });
 export type InsertWellnessGoal = z.infer<typeof insertWellnessGoalSchema>;
 export type WellnessGoal = typeof wellnessGoals.$inferSelect;
+
+// ─── DAILY CHECK-INS (user self-report) ───
+export const dailyCheckins = sqliteTable("daily_checkins", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  date: text("date").notNull(),
+  sleepQuality: integer("sleep_quality"),
+  energyLevel: integer("energy_level"),
+  mood: integer("mood"),
+  stressLevel: integer("stress_level"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertDailyCheckinSchema = createInsertSchema(dailyCheckins).omit({ id: true, createdAt: true });
+export type InsertDailyCheckin = z.infer<typeof insertDailyCheckinSchema>;
+export type DailyCheckin = typeof dailyCheckins.$inferSelect;
+
+// ─── AGENT ACTIONS LOG (what the AI did) ───
+export const agentActions = sqliteTable("agent_actions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  date: text("date").notNull(),
+  actionType: text("action_type").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  metadata: text("metadata"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertAgentActionSchema = createInsertSchema(agentActions).omit({ id: true, createdAt: true });
+export type InsertAgentAction = z.infer<typeof insertAgentActionSchema>;
+export type AgentAction = typeof agentActions.$inferSelect;
+
+// ─── DAILY PROTOCOLS (AI-generated daily plan) ───
+export const dailyProtocols = sqliteTable("daily_protocols", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  date: text("date").notNull(),
+  protocol: text("protocol").notNull(),
+  reasoning: text("reasoning"),
+  generatedAt: integer("generated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertDailyProtocolSchema = createInsertSchema(dailyProtocols).omit({ id: true, generatedAt: true });
+export type InsertDailyProtocol = z.infer<typeof insertDailyProtocolSchema>;
+export type DailyProtocol = typeof dailyProtocols.$inferSelect;
+
+// ─── WEEKLY REVIEWS (AI weekly analysis) ───
+export const weeklyReviews = sqliteTable("weekly_reviews", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  weekStart: text("week_start").notNull(),
+  weekEnd: text("week_end").notNull(),
+  summary: text("summary").notNull(),
+  insights: text("insights"),
+  adjustments: text("adjustments"),
+  overallScore: integer("overall_score"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertWeeklyReviewSchema = createInsertSchema(weeklyReviews).omit({ id: true, createdAt: true });
+export type InsertWeeklyReview = z.infer<typeof insertWeeklyReviewSchema>;
+export type WeeklyReview = typeof weeklyReviews.$inferSelect;

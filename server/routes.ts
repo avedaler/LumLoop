@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertUserSchema, insertAssessmentSchema } from "@shared/schema";
 import { z } from "zod";
 import { generateCoachResponse } from "./ai-coach";
+import { generateDailyProtocol } from "./agent";
 import bcrypt from "bcryptjs";
 
 // In-memory chat history per user
@@ -288,6 +289,47 @@ export async function registerRoutes(server: Server, app: Express) {
     const goal = await storage.updateWellnessGoal(parseInt(req.params.id), req.body);
     if (!goal) return res.status(404).json({ error: "Not found" });
     res.json(goal);
+  });
+
+  // ─── CHECK-INS ───
+  app.get("/api/checkins/:userId/:date", async (req, res) => {
+    const checkin = await storage.getDailyCheckin(parseInt(req.params.userId), req.params.date);
+    res.json(checkin || null);
+  });
+
+  app.post("/api/checkins", async (req, res) => {
+    try {
+      const checkin = await storage.createDailyCheckin(req.body);
+      res.json(checkin);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // ─── AGENT ACTIONS ───
+  app.get("/api/agent-actions/:userId", async (req, res) => {
+    const limit = parseInt(req.query.limit as string) || 20;
+    res.json(await storage.getAgentActions(parseInt(req.params.userId), limit));
+  });
+
+  // ─── DAILY PROTOCOLS ───
+  app.get("/api/protocol/:userId/:date", async (req, res) => {
+    const protocol = await storage.getDailyProtocol(parseInt(req.params.userId), req.params.date);
+    res.json(protocol || null);
+  });
+
+  // ─── WEEKLY REVIEWS ───
+  app.get("/api/weekly-review/:userId/:week", async (req, res) => {
+    const review = await storage.getWeeklyReview(parseInt(req.params.userId), req.params.week);
+    res.json(review || null);
+  });
+
+  // ─── MANUAL AGENT TRIGGER ───
+  app.post("/api/agent/generate-protocol/:userId", async (req, res) => {
+    try {
+      await generateDailyProtocol(parseInt(req.params.userId));
+      const todayStr = new Date().toISOString().split("T")[0];
+      const protocol = await storage.getDailyProtocol(parseInt(req.params.userId), todayStr);
+      res.json(protocol || { ok: true });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   // ─── WAITLIST ───
