@@ -58,6 +58,26 @@ export default function Today() {
   const [estimating, setEstimating] = useState(false);
   const [mealType, setMealType] = useState("lunch");
 
+  // AI Coach quick-ask state
+  const [coachQuestion, setCoachQuestion] = useState("");
+  const [coachAnswer, setCoachAnswer] = useState("");
+  const [coachLoading, setCoachLoading] = useState(false);
+
+  const askCoach = async () => {
+    if (!coachQuestion.trim() || coachLoading) return;
+    setCoachLoading(true);
+    setCoachAnswer("");
+    try {
+      const r = await apiRequest("POST", `/api/chat/${userId}`, { message: coachQuestion });
+      const data = await r.json();
+      setCoachAnswer(data.reply);
+      setCoachQuestion("");
+    } catch {
+      setCoachAnswer("Sorry, I couldn't process that. Try again.");
+    }
+    setCoachLoading(false);
+  };
+
   const estimateMeal = async () => {
     if (!mealDesc.trim()) return;
     setEstimating(true);
@@ -385,28 +405,64 @@ export default function Today() {
 
           {/* RIGHT column (~40%) — AI Coach summary + Bio Age breakdown */}
           <div className="lg:col-span-2 space-y-4">
-            {/* AI Coach summary */}
-            <button
-              onClick={() => setShowCoach(true)}
-              className="w-full bg-card border border-primary/10 rounded-xl p-5 text-left hover:bg-primary/3 transition-colors"
-              data-testid="open-coach-card"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Sparkles size={16} className="text-primary" />
+            {/* AI Coach — inline widget */}
+            <div className="bg-card border border-primary/15 rounded-xl p-5" data-testid="coach-widget">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Sparkles size={15} className="text-primary" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-semibold text-foreground">AI Coach</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary font-bold uppercase tracking-wider">Chat</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    HRV trending up 15% this week. Bio age dropped 0.3yr since adding evening Ashwagandha.
-                    {score?.stressLevel === "High" ? " Consider a breathwork session at 2pm to manage cortisol." : " Keep up the current protocol."}
-                  </p>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">AI Coach</p>
+                  <p className="text-[10px] text-muted-foreground">Ask anything about your wellness</p>
                 </div>
               </div>
-            </button>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                HRV trending up 15% this week. Bio age dropped 0.3yr since adding evening Ashwagandha.
+                {score?.stressLevel === "High" ? " Consider a breathwork session today." : " Keep up the current protocol."}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ask your coach..."
+                  value={coachQuestion}
+                  onChange={(e) => setCoachQuestion(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && coachQuestion.trim()) { askCoach(); } }}
+                  className="flex-1 bg-background border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
+                  data-testid="coach-quick-input"
+                />
+                <button
+                  onClick={askCoach}
+                  disabled={!coachQuestion.trim() || coachLoading}
+                  className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 transition-opacity"
+                  data-testid="coach-quick-send"
+                >
+                  {coachLoading ? "..." : "Ask"}
+                </button>
+              </div>
+              {coachAnswer && (
+                <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/10">
+                  <p className="text-xs text-foreground leading-relaxed">{coachAnswer}</p>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {["How's my sleep?", "Supplement timing", "What should I eat?"].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => { setCoachQuestion(q); }}
+                    className="text-[10px] px-2.5 py-1 rounded-full bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowCoach(true)}
+                  className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  data-testid="open-full-coach"
+                >
+                  Open full chat →
+                </button>
+              </div>
+            </div>
 
             {/* Bio Age subsystem breakdown */}
             <div className="bg-card border border-border/40 rounded-xl p-5">

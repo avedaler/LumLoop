@@ -14,10 +14,10 @@ const navItems = [
   { path: "/", icon: Sparkles, label: "Today" },
   { path: "/stack", icon: Pill, label: "Stack" },
   { path: "/insights", icon: BarChart3, label: "Insights" },
-  { path: "/profile", icon: User, label: "Profile" },
   { path: "/checkin", icon: ClipboardCheck, label: "Check-in" },
   { path: "/data", icon: Activity, label: "Log Data" },
   { path: "/biomarkers", icon: TestTube2, label: "Biomarkers" },
+  { path: "/profile", icon: User, label: "Profile" },
   { path: "/pricing", icon: CreditCard, label: "Pricing" },
 ];
 
@@ -74,6 +74,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Navigation */}
         <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+          {/* AI Coach — top of nav */}
+          <button
+            onClick={() => { setShowCoach(true); setMobileOpen(false); }}
+            className={`w-full flex items-center gap-3 rounded-lg transition-colors mb-2 ${
+              collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+            } bg-[hsl(var(--sidebar-primary))]/10 text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-primary))]/20 border border-[hsl(var(--sidebar-primary))]/20`}
+            data-testid="nav-coach"
+          >
+            <Sparkles size={18} strokeWidth={2} />
+            {!collapsed && <span className="text-sm font-semibold">AI Coach</span>}
+          </button>
+
+          <div className="h-px bg-[hsl(var(--sidebar-border))] my-2" />
+
           {navItems.map((item) => {
             const isActive = location === item.path;
             const Icon = item.icon;
@@ -125,17 +139,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           )}
 
-          {/* AI Coach button */}
-          <button
-            onClick={() => { setShowCoach(true); setMobileOpen(false); }}
-            className={`w-full flex items-center gap-3 rounded-lg transition-colors mt-2 ${
-              collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2"
-            } text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]/50`}
-            data-testid="nav-coach"
-          >
-            <Sparkles size={18} strokeWidth={1.5} />
-            {!collapsed && <span className="text-sm font-medium">AI Coach</span>}
-          </button>
         </nav>
 
         {/* User area at bottom */}
