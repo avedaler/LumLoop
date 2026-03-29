@@ -1,23 +1,24 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp, json } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // ─── USERS ───
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  onboardingComplete: boolean("onboarding_complete").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  passwordHash: text("password_hash"),
+  onboardingComplete: integer("onboarding_complete", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, passwordHash: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 // ─── HEALTH ASSESSMENT ───
-export const assessments = pgTable("assessments", {
-  id: serial("id").primaryKey(),
+export const assessments = sqliteTable("assessments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull(),
   primaryGoal: text("primary_goal"),
   sleepQuality: text("sleep_quality"),
@@ -25,8 +26,8 @@ export const assessments = pgTable("assessments", {
   supplementUse: text("supplement_use"),
   dietStyle: text("diet_style"),
   exerciseFrequency: text("exercise_frequency"),
-  glp1User: boolean("glp1_user").default(false),
-  completedAt: timestamp("completed_at").defaultNow(),
+  glp1User: integer("glp1_user", { mode: "boolean" }).default(false),
+  completedAt: integer("completed_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
 export const insertAssessmentSchema = createInsertSchema(assessments).omit({ id: true, completedAt: true });
@@ -34,8 +35,8 @@ export type InsertAssessment = z.infer<typeof insertAssessmentSchema>;
 export type Assessment = typeof assessments.$inferSelect;
 
 // ─── DAILY SCORES ───
-export const dailyScores = pgTable("daily_scores", {
-  id: serial("id").primaryKey(),
+export const dailyScores = sqliteTable("daily_scores", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull(),
   date: text("date").notNull(),
   readiness: integer("readiness"),
@@ -58,8 +59,8 @@ export type InsertDailyScore = z.infer<typeof insertDailyScoreSchema>;
 export type DailyScore = typeof dailyScores.$inferSelect;
 
 // ─── SUPPLEMENTS ───
-export const supplements = pgTable("supplements", {
-  id: serial("id").primaryKey(),
+export const supplements = sqliteTable("supplements", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull(),
   name: text("name").notNull(),
   dose: text("dose").notNull(),
@@ -68,7 +69,7 @@ export const supplements = pgTable("supplements", {
   form: text("form"),
   category: text("category"),
   confidence: integer("confidence"),
-  active: boolean("active").default(true),
+  active: integer("active", { mode: "boolean" }).default(true),
 });
 
 export const insertSupplementSchema = createInsertSchema(supplements).omit({ id: true });
@@ -76,13 +77,13 @@ export type InsertSupplement = z.infer<typeof insertSupplementSchema>;
 export type Supplement = typeof supplements.$inferSelect;
 
 // ─── SUPPLEMENT LOG (daily adherence) ───
-export const supplementLogs = pgTable("supplement_logs", {
-  id: serial("id").primaryKey(),
+export const supplementLogs = sqliteTable("supplement_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull(),
   supplementId: integer("supplement_id").notNull(),
   date: text("date").notNull(),
-  taken: boolean("taken").default(false),
-  takenAt: timestamp("taken_at"),
+  taken: integer("taken", { mode: "boolean" }).default(false),
+  takenAt: integer("taken_at", { mode: "timestamp" }),
 });
 
 export const insertSupplementLogSchema = createInsertSchema(supplementLogs).omit({ id: true, takenAt: true });
@@ -90,8 +91,8 @@ export type InsertSupplementLog = z.infer<typeof insertSupplementLogSchema>;
 export type SupplementLog = typeof supplementLogs.$inferSelect;
 
 // ─── MEALS ───
-export const meals = pgTable("meals", {
-  id: serial("id").primaryKey(),
+export const meals = sqliteTable("meals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull(),
   date: text("date").notNull(),
   mealType: text("meal_type").notNull(), // breakfast, lunch, snack, dinner
@@ -102,7 +103,7 @@ export const meals = pgTable("meals", {
   fat: integer("fat"),
   tags: text("tags"), // comma-separated
   aiRationale: text("ai_rationale"),
-  logged: boolean("logged").default(false),
+  logged: integer("logged", { mode: "boolean" }).default(false),
 });
 
 export const insertMealSchema = createInsertSchema(meals).omit({ id: true });
@@ -110,8 +111,8 @@ export type InsertMeal = z.infer<typeof insertMealSchema>;
 export type Meal = typeof meals.$inferSelect;
 
 // ─── WELLNESS GOALS ───
-export const wellnessGoals = pgTable("wellness_goals", {
-  id: serial("id").primaryKey(),
+export const wellnessGoals = sqliteTable("wellness_goals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull(),
   goalName: text("goal_name").notNull(),
   progress: integer("progress").default(0),

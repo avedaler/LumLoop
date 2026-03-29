@@ -1,5 +1,8 @@
 node_modules
 dist
+lumloop.db
+lumloop.db-wal
+lumloop.db-shm
 .DS_Store
 server/public
 vite.config.ts.*

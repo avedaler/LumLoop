@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertUserSchema, insertAssessmentSchema } from "@shared/schema";
 import { z } from "zod";
 import { generateCoachResponse } from "./ai-coach";
+import bcrypt from "bcryptjs";
 
 // In-memory chat history per user
 const chatHistories: Map<number, { role: string; content: string }[]> = new Map();
@@ -94,7 +95,10 @@ export async function registerRoutes(server: Server, app: Express) {
     const userId = visitorSessions.get(visitorId);
     if (userId) {
       const user = await storage.getUser(userId);
-      if (user) return res.json(user);
+      if (user) {
+        const { passwordHash, ...safeUser } = user;
+        return res.json(safeUser);
+      }
     }
     res.json(null);
   });
@@ -102,36 +106,59 @@ export async function registerRoutes(server: Server, app: Express) {
   // ─── REGISTER: Create new user and bind to visitor session ───
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const data = insertUserSchema.parse(req.body);
+      const { name, email, password } = req.body;
+      if (!name || !email) return res.status(400).json({ error: "Name and email required" });
+
       const visitorId = getVisitorId(req);
 
-      // Check if email already exists — log them in
-      const existing = await storage.getUserByEmail(data.email);
+      // Check if email already exists — log them in if password matches
+      const existing = await storage.getUserByEmail(email.toLowerCase().trim());
       if (existing) {
+        if (existing.passwordHash && password) {
+          const match = await bcrypt.compare(password, existing.passwordHash);
+          if (!match) return res.status(401).json({ error: "Incorrect password" });
+        }
         visitorSessions.set(visitorId, existing.id);
-        return res.json(existing);
+        const { passwordHash, ...safeUser } = existing;
+        return res.json(safeUser);
       }
 
-      const user = await storage.createUser(data);
+      // Hash password if provided
+      const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+
+      const user = await storage.createUser({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        passwordHash,
+      });
       await seedUserData(user.id);
       visitorSessions.set(visitorId, user.id);
-      res.json(user);
+      const { passwordHash: _, ...safeUser } = user;
+      res.json(safeUser);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
   });
 
-  // ─── LOGIN: Existing user by email ───
+  // ─── LOGIN: Existing user by email + password ───
   app.post("/api/auth/login", async (req, res) => {
-    const { email } = req.body;
+    const { email, password } = req.body;
     if (!email) return res.status(400).json({ error: "Email required" });
 
     const user = await storage.getUserByEmail(email.toLowerCase().trim());
     if (!user) return res.status(404).json({ error: "No account found with this email" });
 
+    // If user has a password, verify it
+    if (user.passwordHash) {
+      if (!password) return res.status(401).json({ error: "Password required" });
+      const match = await bcrypt.compare(password, user.passwordHash);
+      if (!match) return res.status(401).json({ error: "Incorrect password" });
+    }
+
     const visitorId = getVisitorId(req);
     visitorSessions.set(visitorId, user.id);
-    res.json(user);
+    const { passwordHash, ...safeUser } = user;
+    res.json(safeUser);
   });
 
   // ─── LOGOUT ───
@@ -162,13 +189,15 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/user/:id", async (req, res) => {
     const user = await storage.getUser(parseInt(req.params.id));
     if (!user) return res.status(404).json({ error: "Not found" });
-    res.json(user);
+    const { passwordHash, ...safeUser } = user;
+    res.json(safeUser);
   });
 
   app.patch("/api/user/:id", async (req, res) => {
     const user = await storage.updateUser(parseInt(req.params.id), req.body);
     if (!user) return res.status(404).json({ error: "Not found" });
-    res.json(user);
+    const { passwordHash, ...safeUser } = user;
+    res.json(safeUser);
   });
 
   // ─── DAILY SCORES ───

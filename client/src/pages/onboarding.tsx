@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useUser } from "../App";
 import { apiRequest } from "../lib/queryClient";
 import LumLoopLogo from "../components/lumloop-logo";
-import { ArrowRight, Moon, Zap, Brain, Heart, Dna, Shield, Mail } from "lucide-react";
+import { ArrowRight, Moon, Zap, Brain, Heart, Dna, Shield, Eye, EyeOff } from "lucide-react";
 
 const goals = [
   { id: "Peak Performance", icon: Zap, color: "text-amber-400", bg: "bg-amber-500/8 border-amber-500/15" },
@@ -17,6 +17,8 @@ export default function Onboarding() {
   const [mode, setMode] = useState<"register" | "login">("register");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,11 +29,16 @@ export default function Onboarding() {
       setError("Please fill in all fields and select a goal");
       return;
     }
+    if (password.length > 0 && password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
       const res = await apiRequest("POST", "/api/auth/register", {
         name: name.trim(), email: email.trim().toLowerCase(),
+        password: password || undefined,
       });
       const user = await res.json();
 
@@ -48,8 +55,13 @@ export default function Onboarding() {
         glp1User: false, dietStyle: null, exerciseFrequency: null,
       });
       setUser({ ...user, onboardingComplete: true });
-    } catch (e) {
-      setError("Something went wrong. Please try again.");
+    } catch (e: any) {
+      const data = e?.message || "";
+      if (data.includes("Incorrect password")) {
+        setError("Account exists with a different password.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     }
     setLoading(false);
   };
@@ -62,11 +74,19 @@ export default function Onboarding() {
     setLoading(true);
     setError("");
     try {
-      const res = await apiRequest("POST", "/api/auth/login", { email: email.trim().toLowerCase() });
+      const res = await apiRequest("POST", "/api/auth/login", {
+        email: email.trim().toLowerCase(),
+        password: password || undefined,
+      });
       const user = await res.json();
       setUser(user);
     } catch (e: any) {
-      setError("No account found with this email. Try registering instead.");
+      const data = e?.message || "";
+      if (data.includes("Incorrect password") || data.includes("Password required")) {
+        setError("Incorrect password.");
+      } else {
+        setError("No account found with this email. Try registering instead.");
+      }
     }
     setLoading(false);
   };
@@ -83,13 +103,35 @@ export default function Onboarding() {
               <p className="text-sm text-muted-foreground mt-1">Sign in with your email</p>
             </div>
 
-            <div className="mb-5">
+            <div className="mb-4">
               <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="daler@lumloop.com"
                 className="w-full bg-background border border-border/50 rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
                 data-testid="login-email"
               />
+            </div>
+
+            <div className="mb-5">
+              <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full bg-background border border-border/50 rounded-lg px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
+                  data-testid="login-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+                  data-testid="toggle-password-visibility"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-sm text-destructive mb-3 text-center">{error}</p>}
@@ -102,7 +144,7 @@ export default function Onboarding() {
               {!loading && <ArrowRight size={16} />}
             </button>
 
-            <button onClick={() => { setMode("register"); setError(""); }}
+            <button onClick={() => { setMode("register"); setError(""); setPassword(""); }}
               className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
               data-testid="switch-to-register"
             >
@@ -134,13 +176,36 @@ export default function Onboarding() {
             />
           </div>
 
-          <div className="mb-5">
+          <div className="mb-4">
             <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="daler@lumloop.com" autoComplete="email"
               className="w-full bg-background border border-border/50 rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
               data-testid="input-email"
             />
+          </div>
+
+          <div className="mb-5">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block mb-2">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a password (optional)"
+                autoComplete="new-password"
+                className="w-full bg-background border border-border/50 rounded-lg px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
+                data-testid="input-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+                data-testid="toggle-password-visibility"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <div className="mb-6">
@@ -173,7 +238,7 @@ export default function Onboarding() {
             {!loading && <ArrowRight size={16} />}
           </button>
 
-          <button onClick={() => { setMode("login"); setError(""); }}
+          <button onClick={() => { setMode("login"); setError(""); setPassword(""); }}
             className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
             data-testid="switch-to-login"
           >
