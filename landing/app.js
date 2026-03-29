@@ -103,12 +103,22 @@
   }, { passive: true });
 
   // Waitlist form
-  window.handleWaitlist = function(e) {
+  window.handleWaitlist = async function(e) {
     e.preventDefault();
     const email = document.getElementById('waitlist-email').value;
     if (email) {
+      try {
+        await fetch('./api/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+      } catch (err) {}
       document.querySelector('.waitlist-form').style.display = 'none';
-      document.getElementById('waitlist-success').style.display = 'block';
+      const success = document.getElementById('waitlist-success');
+      success.style.display = 'block';
+      success.innerHTML = '<p>You\'re on the list. Redirecting to your dashboard...</p>';
+      setTimeout(function() { window.location.href = './app'; }, 2000);
     }
   };
 

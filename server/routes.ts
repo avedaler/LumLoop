@@ -260,4 +260,28 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!goal) return res.status(404).json({ error: "Not found" });
     res.json(goal);
   });
+
+  // ─── WAITLIST ───
+  const waitlistEmails: Set<string> = new Set();
+
+  app.post("/api/waitlist", async (req, res) => {
+    const { email } = req.body;
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ error: "Email required" });
+    }
+    waitlistEmails.add(email.toLowerCase().trim());
+    console.log(`[waitlist] New signup: ${email} (total: ${waitlistEmails.size})`);
+
+    // Also create a user account so they can go straight into the app
+    try {
+      let user = await storage.getUserByEmail(email.toLowerCase().trim());
+      if (!user) {
+        const name = email.split("@")[0].replace(/[^a-zA-Z]/g, " ").trim() || "Member";
+        user = await storage.createUser({ email: email.toLowerCase().trim(), name });
+      }
+      res.json({ ok: true, userId: user.id });
+    } catch (e) {
+      res.json({ ok: true });
+    }
+  });
 }
