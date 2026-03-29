@@ -6,7 +6,7 @@ import ScoreRing from "../components/score-ring";
 import {
   Dna, TrendingDown, Sparkles, Moon, Zap, Heart, Brain,
   Check, Pill, Utensils, Dumbbell, Wind, Sun, Clock,
-  Bot, Mail, Bell, BarChart3, AlertTriangle,
+  Bot, Mail, Bell, BarChart3, AlertTriangle, Plus, X, Loader2,
 } from "lucide-react";
 import type { DailyScore, Supplement, SupplementLog, Meal, AgentAction } from "@shared/schema";
 
@@ -49,6 +49,43 @@ export default function Today() {
       const r = await apiRequest("PATCH", `/api/meals/${mealId}`, { logged }); return r.json();
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/meals", userId, todayStr] }); },
+  });
+
+  // Meal logging state
+  const [showMealForm, setShowMealForm] = useState(false);
+  const [mealDesc, setMealDesc] = useState("");
+  const [mealEstimate, setMealEstimate] = useState<{ name: string; calories: number; protein: number; carbs: number; fat: number } | null>(null);
+  const [estimating, setEstimating] = useState(false);
+  const [mealType, setMealType] = useState("lunch");
+
+  const estimateMeal = async () => {
+    if (!mealDesc.trim()) return;
+    setEstimating(true);
+    try {
+      const r = await apiRequest("POST", "/api/meals/estimate", { description: mealDesc });
+      const data = await r.json();
+      setMealEstimate(data);
+    } catch { setMealEstimate({ name: mealDesc, calories: 400, protein: 25, carbs: 35, fat: 18 }); }
+    setEstimating(false);
+  };
+
+  const saveMealMutation = useMutation({
+    mutationFn: async () => {
+      if (!mealEstimate) return;
+      const r = await apiRequest("POST", "/api/meals", {
+        userId, date: todayStr, mealType,
+        name: mealEstimate.name, calories: mealEstimate.calories,
+        protein: mealEstimate.protein, carbs: mealEstimate.carbs, fat: mealEstimate.fat,
+        tags: "", aiRationale: "User-logged meal", logged: true,
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/meals", userId, todayStr] });
+      setShowMealForm(false);
+      setMealDesc("");
+      setMealEstimate(null);
+    },
   });
 
   // Build protocol items
@@ -251,6 +288,56 @@ export default function Today() {
                   </div>
                   <span className="text-xs font-mono text-muted-foreground">{completedCount}/{totalCount}</span>
                 </div>
+              </div>
+
+              {/* Log Meal button + form */}
+              <div className="mb-3">
+                {!showMealForm ? (
+                  <button onClick={() => setShowMealForm(true)}
+                    className="flex items-center gap-1.5 text-xs text-primary font-medium hover:opacity-80 transition-opacity"
+                    data-testid="log-meal-btn">
+                    <Plus size={14} /> Log Meal
+                  </button>
+                ) : (
+                  <div className="bg-background/50 border border-border/30 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-foreground">Log a meal</span>
+                      <button onClick={() => { setShowMealForm(false); setMealEstimate(null); setMealDesc(""); }}
+                        className="text-muted-foreground hover:text-foreground"><X size={14} /></button>
+                    </div>
+                    <input value={mealDesc} onChange={e => setMealDesc(e.target.value)}
+                      placeholder="What did you eat? e.g. grilled chicken salad with quinoa"
+                      className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30" />
+                    <div className="flex gap-2">
+                      <select value={mealType} onChange={e => setMealType(e.target.value)}
+                        className="bg-background border border-border/50 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="snack">Snack</option>
+                        <option value="dinner">Dinner</option>
+                      </select>
+                      <button onClick={estimateMeal} disabled={estimating || !mealDesc.trim()}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-all">
+                        {estimating ? <Loader2 size={12} className="animate-spin" /> : "Estimate Macros"}
+                      </button>
+                    </div>
+                    {mealEstimate && (
+                      <div className="bg-card border border-border/30 rounded-lg p-2">
+                        <p className="text-xs font-medium text-foreground mb-1">{mealEstimate.name}</p>
+                        <div className="flex gap-3 text-[11px] font-mono text-muted-foreground">
+                          <span>{mealEstimate.calories} kcal</span>
+                          <span>P{mealEstimate.protein}g</span>
+                          <span>C{mealEstimate.carbs}g</span>
+                          <span>F{mealEstimate.fat}g</span>
+                        </div>
+                        <button onClick={() => saveMealMutation.mutate()} disabled={saveMealMutation.isPending}
+                          className="mt-2 w-full py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-all">
+                          {saveMealMutation.isPending ? "Saving..." : "Save Meal"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">

@@ -5,7 +5,9 @@ import { insertUserSchema, insertAssessmentSchema } from "@shared/schema";
 import { z } from "zod";
 import { generateCoachResponse } from "./ai-coach";
 import { generateDailyProtocol } from "./agent";
+import { calculateBioAge } from "./bio-age";
 import bcrypt from "bcryptjs";
+import Anthropic from "@anthropic-ai/sdk";
 
 // In-memory chat history per user
 const chatHistories: Map<number, { role: string; content: string }[]> = new Map();
@@ -331,6 +333,187 @@ export async function registerRoutes(server: Server, app: Express) {
       res.json(protocol || { ok: true });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
+
+  // ─── HEALTH METRICS ───
+  app.post("/api/health-metrics", async (req, res) => {
+    try {
+      const metric = await storage.createHealthMetric(req.body);
+      // Recalculate bio age after new health data
+      try { await recalcBioAge(req.body.userId); } catch (e) { /* non-critical */ }
+      res.json(metric);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.get("/api/health-metrics/:userId", async (req, res) => {
+    const limit = parseInt(req.query.limit as string) || 30;
+    res.json(await storage.getHealthMetrics(parseInt(req.params.userId), limit));
+  });
+
+  app.get("/api/health-metrics/:userId/:date", async (req, res) => {
+    const metric = await storage.getHealthMetricByDate(parseInt(req.params.userId), req.params.date);
+    res.json(metric || null);
+  });
+
+  // ─── BIOMARKERS ───
+  app.post("/api/biomarkers", async (req, res) => {
+    try {
+      const biomarker = await storage.createBiomarker(req.body);
+      // Recalculate bio age after new biomarker data
+      try { await recalcBioAge(req.body.userId); } catch (e) { /* non-critical */ }
+      res.json(biomarker);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.get("/api/biomarkers/:userId", async (req, res) => {
+    res.json(await storage.getBiomarkers(parseInt(req.params.userId)));
+  });
+
+  app.get("/api/biomarkers/:userId/:name", async (req, res) => {
+    res.json(await storage.getBiomarkersByName(parseInt(req.params.userId), req.params.name));
+  });
+
+  // ─── MEALS CREATE + AI ESTIMATE ───
+  app.post("/api/meals", async (req, res) => {
+    try {
+      const meal = await storage.createMeal(req.body);
+      res.json(meal);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.post("/api/meals/estimate", async (req, res) => {
+    const { description } = req.body;
+    if (!description) return res.status(400).json({ error: "Description required" });
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.json({ calories: 400, protein: 25, carbs: 35, fat: 18, name: description });
+    }
+
+    try {
+      const anthropic = new Anthropic();
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 200,
+        messages: [{ role: "user", content: `Estimate the macronutrients for this meal: "${description}". Return ONLY valid JSON: {"name": "meal name", "calories": number, "protein": number, "carbs": number, "fat": number}` }],
+        system: "You are a nutrition expert. Estimate calories, protein, carbs, and fat for the described meal. Be reasonably accurate. Return ONLY valid JSON, no markdown.",
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+      res.json(parsed);
+    } catch {
+      res.json({ calories: 400, protein: 25, carbs: 35, fat: 18, name: description });
+    }
+  });
+
+  // ─── DAILY SCORES CREATE/UPDATE ───
+  app.post("/api/scores/:userId", async (req, res) => {
+    try {
+      const score = await storage.upsertDailyScore({ userId: parseInt(req.params.userId), ...req.body });
+      res.json(score);
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // ─── APPLE HEALTH IMPORT ───
+  app.post("/api/import/apple-health", async (req, res) => {
+    try {
+      const { userId, records } = req.body;
+      if (!userId || !records || !Array.isArray(records)) {
+        return res.status(400).json({ error: "userId and records array required" });
+      }
+
+      let imported = 0;
+      // Records should be pre-parsed client-side as: { date, sleepHours?, hrv?, restingHR?, steps?, weight? }
+      for (const record of records) {
+        if (!record.date) continue;
+        const existing = await storage.getHealthMetricByDate(userId, record.date);
+        if (existing) continue; // skip duplicates
+        await storage.createHealthMetric({
+          userId,
+          date: record.date,
+          sleepHours: record.sleepHours ?? null,
+          hrv: record.hrv ?? null,
+          restingHR: record.restingHR ?? null,
+          steps: record.steps ?? null,
+          weight: record.weight ?? null,
+          sleepQuality: null,
+          bodyFat: null,
+          bloodPressureSys: null,
+          bloodPressureDia: null,
+          bloodGlucose: null,
+          bodyTemp: null,
+          oxygenSat: null,
+          source: "apple_health",
+        });
+        imported++;
+      }
+
+      // Recalculate bio age with latest data
+      try { await recalcBioAge(userId); } catch (e) { /* non-critical */ }
+
+      res.json({ ok: true, imported });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  // ─── BIO AGE RECALC HELPER ───
+  async function recalcBioAge(userId: number) {
+    const user = await storage.getUser(userId);
+    if (!user) return;
+
+    const todayDate = today();
+    const latestMetric = await storage.getHealthMetricByDate(userId, todayDate);
+    const allBiomarkers = await storage.getBiomarkers(userId);
+
+    // Get latest value for key biomarkers
+    const getLatest = (name: string) => {
+      const found = allBiomarkers.find(b => b.name === name);
+      return found?.value;
+    };
+
+    // Estimate chronological age (default 40 if unknown)
+    const chronoAge = user.createdAt ? 40 : 40;
+
+    // Calculate supplement adherence
+    const logs = await storage.getSupplementLogs(userId, todayDate);
+    const supps = await storage.getSupplements(userId);
+    const adherence = supps.length > 0 ? (logs.filter(l => l.taken).length / supps.length) * 100 : 50;
+
+    const result = calculateBioAge(
+      chronoAge,
+      {
+        sleepHours: latestMetric?.sleepHours ?? undefined,
+        hrv: latestMetric?.hrv ?? undefined,
+        restingHR: latestMetric?.restingHR ?? undefined,
+        steps: latestMetric?.steps ?? undefined,
+        bodyFat: latestMetric?.bodyFat ?? undefined,
+        weight: latestMetric?.weight ?? undefined,
+      },
+      {
+        cortisol: getLatest("cortisol"),
+        vitaminD: getLatest("vitamin_d"),
+        hsCRP: getLatest("hs_crp"),
+        hba1c: getLatest("hba1c"),
+      },
+      adherence
+    );
+
+    // Upsert daily score
+    await storage.upsertDailyScore({
+      userId,
+      date: todayDate,
+      bioAge: result.bioAge,
+      cardioAge: result.cardioAge,
+      sleepAge: result.sleepAge,
+      metabolicAge: result.metabolicAge,
+      immuneAge: result.immuneAge,
+      muscleAge: result.muscleAge,
+      hrv: latestMetric?.hrv ?? null,
+      sleepHours: latestMetric?.sleepHours ?? null,
+      sleepScore: latestMetric?.sleepQuality ? latestMetric.sleepQuality * 20 : null,
+      readiness: null,
+      energyLevel: null,
+      focusScore: null,
+      stressLevel: null,
+    });
+  }
 
   // ─── WAITLIST ───
   const waitlistEmails: Set<string> = new Set();

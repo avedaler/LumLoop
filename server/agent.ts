@@ -7,11 +7,13 @@ function todayStr() {
 }
 
 // ─── TEMPLATE PROTOCOL (no API key needed) ───
-function generateTemplateProtocol(user: User, supplements: Supplement[], latestScore: DailyScore | undefined) {
+function generateTemplateProtocol(user: User, supplements: Supplement[], latestScore: DailyScore | undefined, latestMetric?: any) {
   const isLowEnergy = latestScore?.energyLevel === "Low";
   const name = user.name.split(" ")[0];
+  const sleepNote = latestMetric?.sleepHours ? ` You logged ${latestMetric.sleepHours}h of sleep.` : "";
+  const hrvNote = latestMetric?.hrv ? ` HRV: ${latestMetric.hrv}ms.` : "";
   return {
-    summary: `Good morning ${name}. Today's protocol focuses on ${isLowEnergy ? "energy recovery — prioritize rest and adaptogens" : "maintaining your momentum — stay consistent with your stack"}.`,
+    summary: `Good morning ${name}. Today's protocol focuses on ${isLowEnergy ? "energy recovery — prioritize rest and adaptogens" : "maintaining your momentum — stay consistent with your stack"}.${sleepNote}${hrvNote}`,
     supplements: supplements.map(s => ({
       name: s.name, dose: s.dose, timing: s.timing, note: s.benefit,
     })),
@@ -39,12 +41,13 @@ async function generateDailyProtocol(userId: number) {
   const existing = await storage.getDailyProtocol(userId, today);
   if (existing) return;
 
-  // Gather context
+  // Gather context — use real health metrics if available
   const scores = await storage.getDailyScores(userId, 7);
   const supplements = await storage.getSupplements(userId);
+  const latestMetric = await storage.getHealthMetricByDate(userId, today);
 
   // Generate template protocol (AI version would go here with ANTHROPIC_API_KEY check)
-  const protocol = generateTemplateProtocol(user, supplements, scores[0]);
+  const protocol = generateTemplateProtocol(user, supplements, scores[0], latestMetric);
 
   // Save to DB
   await storage.createDailyProtocol({
@@ -194,14 +197,24 @@ async function checkReminders() {
 
 // ─── ANOMALY DETECTION ───
 async function checkAnomalies(userId: number) {
-  const scores = await storage.getDailyScores(userId, 7);
-  if (scores.length < 3) return;
+  // Check real health metrics first, fall back to daily scores
+  const metrics = await storage.getHealthMetrics(userId, 7);
+  let recentHrv: number | null = null;
+  let avgHrv = 0;
 
-  const recent = scores[0];
-  const older = scores.slice(1);
-  const avgHrv = older.reduce((acc, s) => acc + (s.hrv || 0), 0) / older.length;
+  if (metrics.length >= 3) {
+    recentHrv = metrics[0]?.hrv ?? null;
+    const olderHrvs = metrics.slice(1).filter(m => m.hrv != null).map(m => m.hrv!);
+    avgHrv = olderHrvs.length > 0 ? olderHrvs.reduce((a, b) => a + b, 0) / olderHrvs.length : 0;
+  } else {
+    const scores = await storage.getDailyScores(userId, 7);
+    if (scores.length < 3) return;
+    recentHrv = scores[0]?.hrv ?? null;
+    const older = scores.slice(1);
+    avgHrv = older.reduce((acc, s) => acc + (s.hrv || 0), 0) / older.length;
+  }
 
-  if (recent.hrv && avgHrv > 0 && recent.hrv < avgHrv * 0.8) {
+  if (recentHrv && avgHrv > 0 && recentHrv < avgHrv * 0.8) {
     const today = todayStr();
     const recentActions = await storage.getAgentActions(userId, 5);
     const alreadyDetected = recentActions.some(a => a.date === today && a.actionType === "anomaly_detected");
@@ -211,7 +224,7 @@ async function checkAnomalies(userId: number) {
         date: today,
         actionType: "anomaly_detected",
         title: "HRV drop detected",
-        description: `Your HRV (${recent.hrv}ms) is ${Math.round((1 - recent.hrv / avgHrv) * 100)}% below your 7-day average. Consider reducing training intensity today and prioritizing sleep tonight.`,
+        description: `Your HRV (${recentHrv}ms) is ${Math.round((1 - recentHrv! / avgHrv) * 100)}% below your 7-day average. Consider reducing training intensity today and prioritizing sleep tonight.`,
       });
     }
   }

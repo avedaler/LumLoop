@@ -170,6 +170,50 @@ export const insertDailyProtocolSchema = createInsertSchema(dailyProtocols).omit
 export type InsertDailyProtocol = z.infer<typeof insertDailyProtocolSchema>;
 export type DailyProtocol = typeof dailyProtocols.$inferSelect;
 
+// ─── HEALTH METRICS (manual daily entry) ───
+export const healthMetrics = sqliteTable("health_metrics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  date: text("date").notNull(),
+  sleepHours: real("sleep_hours"),
+  sleepQuality: integer("sleep_quality"),
+  hrv: integer("hrv"),
+  restingHR: integer("resting_hr"),
+  steps: integer("steps"),
+  weight: real("weight"),
+  bodyFat: real("body_fat"),
+  bloodPressureSys: integer("bp_sys"),
+  bloodPressureDia: integer("bp_dia"),
+  bloodGlucose: real("blood_glucose"),
+  bodyTemp: real("body_temp"),
+  oxygenSat: integer("oxygen_sat"),
+  source: text("source").default("manual"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertHealthMetricSchema = createInsertSchema(healthMetrics).omit({ id: true, createdAt: true });
+export type InsertHealthMetric = z.infer<typeof insertHealthMetricSchema>;
+export type HealthMetric = typeof healthMetrics.$inferSelect;
+
+// ─── BIOMARKERS (lab results) ───
+export const biomarkers = sqliteTable("biomarkers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  date: text("date").notNull(),
+  name: text("name").notNull(),
+  value: real("value").notNull(),
+  unit: text("unit").notNull(),
+  referenceMin: real("reference_min"),
+  referenceMax: real("reference_max"),
+  status: text("status"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertBiomarkerSchema = createInsertSchema(biomarkers).omit({ id: true, createdAt: true });
+export type InsertBiomarker = z.infer<typeof insertBiomarkerSchema>;
+export type Biomarker = typeof biomarkers.$inferSelect;
+
 // ─── WEEKLY REVIEWS (AI weekly analysis) ───
 export const weeklyReviews = sqliteTable("weekly_reviews", {
   id: integer("id").primaryKey({ autoIncrement: true }),

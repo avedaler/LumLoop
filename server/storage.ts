@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { eq, and, desc } from "drizzle-orm";
 import {
   users, assessments, dailyScores, supplements, supplementLogs, meals, wellnessGoals,
-  dailyCheckins, agentActions, dailyProtocols, weeklyReviews,
+  dailyCheckins, agentActions, dailyProtocols, weeklyReviews, healthMetrics, biomarkers,
 } from "@shared/schema";
 import type {
   User, InsertUser,
@@ -17,6 +17,8 @@ import type {
   AgentAction, InsertAgentAction,
   DailyProtocol, InsertDailyProtocol,
   WeeklyReview, InsertWeeklyReview,
+  HealthMetric, InsertHealthMetric,
+  Biomarker, InsertBiomarker,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -70,6 +72,19 @@ export interface IStorage {
   // Weekly Reviews
   getWeeklyReview(userId: number, weekStart: string): Promise<WeeklyReview | undefined>;
   createWeeklyReview(data: InsertWeeklyReview): Promise<WeeklyReview>;
+
+  // Health Metrics
+  createHealthMetric(data: InsertHealthMetric): Promise<HealthMetric>;
+  getHealthMetrics(userId: number, limit?: number): Promise<HealthMetric[]>;
+  getHealthMetricByDate(userId: number, date: string): Promise<HealthMetric | undefined>;
+
+  // Biomarkers
+  createBiomarker(data: InsertBiomarker): Promise<Biomarker>;
+  getBiomarkers(userId: number): Promise<Biomarker[]>;
+  getBiomarkersByName(userId: number, name: string): Promise<Biomarker[]>;
+
+  // Daily Score upsert
+  upsertDailyScore(data: InsertDailyScore): Promise<DailyScore>;
 
   // All Users
   getAllUsers(): Promise<User[]>;
@@ -197,6 +212,40 @@ sqlite.exec(`
     protocol TEXT NOT NULL,
     reasoning TEXT,
     generated_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS health_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    sleep_hours REAL,
+    sleep_quality INTEGER,
+    hrv INTEGER,
+    resting_hr INTEGER,
+    steps INTEGER,
+    weight REAL,
+    body_fat REAL,
+    bp_sys INTEGER,
+    bp_dia INTEGER,
+    blood_glucose REAL,
+    body_temp REAL,
+    oxygen_sat INTEGER,
+    source TEXT DEFAULT 'manual',
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS biomarkers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    name TEXT NOT NULL,
+    value REAL NOT NULL,
+    unit TEXT NOT NULL,
+    reference_min REAL,
+    reference_max REAL,
+    status TEXT,
+    notes TEXT,
+    created_at INTEGER
   );
 
   CREATE TABLE IF NOT EXISTS weekly_reviews (
@@ -393,6 +442,60 @@ class SqliteStorage implements IStorage {
       ...data,
       createdAt: new Date(),
     }).returning().get();
+  }
+
+  // Health Metrics
+  async createHealthMetric(data: InsertHealthMetric): Promise<HealthMetric> {
+    return db.insert(healthMetrics).values({
+      ...data,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  async getHealthMetrics(userId: number, limit = 30): Promise<HealthMetric[]> {
+    return db.select().from(healthMetrics)
+      .where(eq(healthMetrics.userId, userId))
+      .orderBy(desc(healthMetrics.date))
+      .limit(limit)
+      .all();
+  }
+
+  async getHealthMetricByDate(userId: number, date: string): Promise<HealthMetric | undefined> {
+    return db.select().from(healthMetrics)
+      .where(and(eq(healthMetrics.userId, userId), eq(healthMetrics.date, date)))
+      .get();
+  }
+
+  // Biomarkers
+  async createBiomarker(data: InsertBiomarker): Promise<Biomarker> {
+    return db.insert(biomarkers).values({
+      ...data,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  async getBiomarkers(userId: number): Promise<Biomarker[]> {
+    return db.select().from(biomarkers)
+      .where(eq(biomarkers.userId, userId))
+      .orderBy(desc(biomarkers.date))
+      .all();
+  }
+
+  async getBiomarkersByName(userId: number, name: string): Promise<Biomarker[]> {
+    return db.select().from(biomarkers)
+      .where(and(eq(biomarkers.userId, userId), eq(biomarkers.name, name)))
+      .orderBy(desc(biomarkers.date))
+      .all();
+  }
+
+  // Daily Score upsert
+  async upsertDailyScore(data: InsertDailyScore): Promise<DailyScore> {
+    const existing = await this.getDailyScore(data.userId, data.date);
+    if (existing) {
+      const rows = db.update(dailyScores).set(data).where(eq(dailyScores.id, existing.id)).returning().all();
+      return rows[0];
+    }
+    return db.insert(dailyScores).values(data).returning().get();
   }
 
   // All Users
