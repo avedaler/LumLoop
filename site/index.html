@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LumLoop — The AI Wellness Operating System</title>
+  <meta name="description" content="LumLoop closes the loop between data, decisions, fulfillment, and measurable outcomes. Sense, interpret, recommend, fulfill, measure — in one premium wellness platform.">
+  <meta property="og:title" content="LumLoop — The AI Wellness Operating System">
+  <meta property="og:description" content="The closed-loop wellness system for ambitious professionals. AI-powered protocols, biomarker tracking, and supplement fulfillment — all in one platform.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lumloop.com">
+
+  <!-- Fonts -->
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a href="#" class="logo" aria-label="LumLoop home">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+          <path d="M16 2v6M16 24v6M2 16h6M24 16h6" stroke="currentColor" stroke-width="1.2" opacity="0.4"/>
+        </svg>
+        <span class="logo-text">LumLoop</span>
+      </a>
+      <nav class="header-nav" aria-label="Main navigation">
+        <a href="#how-it-works">How It Works</a>
+        <a href="#platform">Platform</a>
+        <a href="#science">Science</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <div class="header-actions">
+        <button data-theme-toggle aria-label="Switch to dark mode" class="theme-toggle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <a href="#waitlist" class="btn btn-primary btn-sm">Join Waitlist</a>
+      </div>
+      <button class="mobile-menu-btn" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav" id="mobile-nav" aria-hidden="true">
+    <nav>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#platform">Platform</a>
+      <a href="#science">Science</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#waitlist" class="btn btn-primary" style="margin-top:var(--space-4)">Join Waitlist</a>
+    </nav>
+  </div>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-inner">
+        <div class="hero-badge fade-in">Now accepting early access members</div>
+        <h1 class="hero-headline fade-in">
+          Your wellness.<br>
+          <span class="hero-accent">Closed-loop.</span>
+        </h1>
+        <p class="hero-sub fade-in">
+          LumLoop is the first AI wellness operating system that connects your biomarkers, supplements, nutrition, and recovery into one measurable, adaptive loop — so every decision you make actually compounds.
+        </p>
+        <div class="hero-cta fade-in">
+          <a href="#waitlist" class="btn btn-primary btn-lg">Get Early Access</a>
+          <a href="#how-it-works" class="btn btn-ghost btn-lg">See How It Works</a>
+        </div>
+        <div class="hero-proof fade-in">
+          <div class="proof-item">
+            <strong>5 systems</strong>
+            <span>in one loop</span>
+          </div>
+          <div class="proof-divider"></div>
+          <div class="proof-item">
+            <strong>AI-powered</strong>
+            <span>protocols</span>
+          </div>
+          <div class="proof-divider"></div>
+          <div class="proof-item">
+            <strong>Real outcomes</strong>
+            <span>not dashboards</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-gradient" aria-hidden="true"></div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="section section-problem" id="problem">
+      <div class="container">
+        <div class="section-label fade-in">The Problem</div>
+        <h2 class="section-headline fade-in">
+          Your health data lives in<br class="desktop-only"> 
+          <span class="text-accent">six different apps.</span>
+        </h2>
+        <p class="section-body fade-in">
+          You wear a ring for sleep. An app for workouts. A spreadsheet for supplements. A different service for bloodwork. Another for nutrition. None of them talk to each other. None of them close the loop between what you measure and what you do.
+        </p>
+        <div class="problem-grid fade-in">
+          <div class="problem-card">
+            <div class="problem-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <h3>Fragmented data</h3>
+            <p>Wearables, labs, and apps don't share context. Your sleep data never meets your supplement stack.</p>
+          </div>
+          <div class="problem-card">
+            <div class="problem-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3>Generic protocols</h3>
+            <p>Most wellness advice isn't personalized to your biology. You follow plans built for averages, not for you.</p>
+          </div>
+          <div class="problem-card">
+            <div class="problem-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <h3>No feedback loop</h3>
+            <p>You take supplements and hope they work. There's no system measuring whether your interventions are producing results.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS — THE LOOP -->
+    <section class="section section-loop" id="how-it-works">
+      <div class="container">
+        <div class="section-label fade-in">How It Works</div>
+        <h2 class="section-headline fade-in">
+          Five steps. One loop.<br class="desktop-only">
+          <span class="text-accent">Always closing.</span>
+        </h2>
+        <p class="section-body fade-in">
+          LumLoop doesn't just track your data — it acts on it. Every insight leads to a recommendation, every recommendation leads to fulfillment, and every outcome feeds back into smarter decisions.
+        </p>
+        <div class="loop-steps">
+          <div class="loop-step fade-in">
+            <div class="step-number">01</div>
+            <div class="step-content">
+              <h3>Sense</h3>
+              <p>Ingest data from wearables, lab results, and self-reported metrics. HRV, sleep, cortisol, glucose, vitamin levels — all in one place.</p>
+            </div>
+          </div>
+          <div class="loop-connector" aria-hidden="true"><svg width="2" height="40" viewBox="0 0 2 40"><line x1="1" y1="0" x2="1" y2="40" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/></svg></div>
+          <div class="loop-step fade-in">
+            <div class="step-number">02</div>
+            <div class="step-content">
+              <h3>Interpret</h3>
+              <p>AI models analyze your biomarkers in context — cross-referencing your sleep patterns with cortisol trends, your supplement timing with absorption rates.</p>
+            </div>
+          </div>
+          <div class="loop-connector" aria-hidden="true"><svg width="2" height="40" viewBox="0 0 2 40"><line x1="1" y1="0" x2="1" y2="40" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/></svg></div>
+          <div class="loop-step fade-in">
+            <div class="step-number">03</div>
+            <div class="step-content">
+              <h3>Recommend</h3>
+              <p>Your AI wellness coach generates personalized daily protocols — supplements, meals, recovery, breathwork — adapted to your biology and goals.</p>
+            </div>
+          </div>
+          <div class="loop-connector" aria-hidden="true"><svg width="2" height="40" viewBox="0 0 2 40"><line x1="1" y1="0" x2="1" y2="40" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/></svg></div>
+          <div class="loop-step fade-in">
+            <div class="step-number">04</div>
+            <div class="step-content">
+              <h3>Fulfill</h3>
+              <p>Supplements, biomarker tests, and wellness products delivered through an integrated marketplace. One tap — no searching, no guessing, no separate checkout.</p>
+            </div>
+          </div>
+          <div class="loop-connector" aria-hidden="true"><svg width="2" height="40" viewBox="0 0 2 40"><line x1="1" y1="0" x2="1" y2="40" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/></svg></div>
+          <div class="loop-step fade-in">
+            <div class="step-number">05</div>
+            <div class="step-content">
+              <h3>Measure</h3>
+              <p>Track your Biological Wellness Age and sub-scores over time. See whether your interventions are actually working — then the loop begins again, smarter.</p>
+            </div>
+          </div>
+        </div>
+        <div class="loop-visual fade-in">
+          <div class="loop-ring">
+            <svg viewBox="-60 -20 400 310" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="140" cy="140" r="130" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+              <circle cx="140" cy="140" r="100" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
+              <circle cx="140" cy="140" r="70" stroke="currentColor" stroke-width="0.5" opacity="0.08"/>
+              <!-- The 5 nodes -->
+              <circle cx="140" cy="10" r="6" fill="var(--color-primary)" opacity="0.9"/>
+              <circle cx="264" cy="95" r="6" fill="var(--color-primary)" opacity="0.7"/>
+              <circle cx="216" cy="240" r="6" fill="var(--color-primary)" opacity="0.6"/>
+              <circle cx="64" cy="240" r="6" fill="var(--color-primary)" opacity="0.5"/>
+              <circle cx="16" cy="95" r="6" fill="var(--color-primary)" opacity="0.4"/>
+              <!-- Connecting arc -->
+              <path d="M140,10 A130,130 0 0,1 264,95 A130,130 0 0,1 216,240 A130,130 0 0,1 64,240 A130,130 0 0,1 16,95 A130,130 0 0,1 140,10" stroke="var(--color-primary)" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="8 4"/>
+              <!-- Labels -->
+              <text x="140" y="-4" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600" opacity="0.7">SENSE</text>
+              <text x="278" y="98" text-anchor="start" fill="currentColor" font-size="10" font-weight="600" opacity="0.7">INTERPRET</text>
+              <text x="226" y="262" text-anchor="start" fill="currentColor" font-size="10" font-weight="600" opacity="0.7">RECOMMEND</text>
+              <text x="52" y="262" text-anchor="end" fill="currentColor" font-size="10" font-weight="600" opacity="0.7">FULFILL</text>
+              <text x="-4" y="98" text-anchor="end" fill="currentColor" font-size="10" font-weight="600" opacity="0.7">MEASURE</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLATFORM FEATURES -->
+    <section class="section section-platform" id="platform">
+      <div class="container">
+        <div class="section-label fade-in">The Platform</div>
+        <h2 class="section-headline fade-in">
+          Everything your wellness<br class="desktop-only">
+          <span class="text-accent">stack is missing.</span>
+        </h2>
+
+        <div class="feature-grid">
+          <!-- Bio Age -->
+          <div class="feature-card feature-card-large fade-in">
+            <div class="feature-tag">North Star Metric</div>
+            <h3>Biological Wellness Age</h3>
+            <p>One number that synthesizes your entire health picture — cardio, sleep, metabolic, immune, and muscular systems — into a single, trackable score. Not a vanity metric. A real composite derived from your biomarkers and daily data.</p>
+            <div class="bio-age-demo">
+              <div class="bio-age-number">
+                <span class="bio-age-value">34.2</span>
+                <span class="bio-age-unit">years</span>
+              </div>
+              <div class="bio-age-delta">6.8 years younger than chronological age</div>
+              <div class="bio-age-subsystems">
+                <div class="subsystem"><span class="subsystem-label">Cardio</span><span class="subsystem-value">32</span></div>
+                <div class="subsystem"><span class="subsystem-label">Sleep</span><span class="subsystem-value">35</span></div>
+                <div class="subsystem"><span class="subsystem-label">Metabolic</span><span class="subsystem-value">36</span></div>
+                <div class="subsystem"><span class="subsystem-label">Immune</span><span class="subsystem-value">33</span></div>
+                <div class="subsystem"><span class="subsystem-label">Muscle</span><span class="subsystem-value">35</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Coach -->
+          <div class="feature-card fade-in">
+            <div class="feature-tag">AI-Powered</div>
+            <h3>Personal Wellness Coach</h3>
+            <p>Ask anything about your supplements, sleep, nutrition, or biomarkers. Your AI coach has full context on your health data and generates evidence-based, personalized guidance — not generic chatbot answers.</p>
+          </div>
+
+          <!-- Supplements -->
+          <div class="feature-card fade-in">
+            <div class="feature-tag">Fulfillment</div>
+            <h3>Supplement Protocols</h3>
+            <p>AI-recommended supplement stacks personalized to your biomarkers. Morning, midday, evening timing. Adherence tracking. One-tap ordering from verified suppliers through the LumLoop marketplace.</p>
+          </div>
+
+          <!-- Biomarkers -->
+          <div class="feature-card fade-in">
+            <div class="feature-tag">Testing</div>
+            <h3>Biomarker Intelligence</h3>
+            <p>Lab results interpreted in the context of your full health picture — not isolated reference ranges. Track cortisol, vitamin D, hs-CRP, lipids, and more over time with AI-powered trend analysis.</p>
+          </div>
+
+          <!-- Nutrition -->
+          <div class="feature-card fade-in">
+            <div class="feature-tag">Protocols</div>
+            <h3>Nutrition & Recovery</h3>
+            <p>Daily meal recommendations matched to your goals and biomarkers. Macro-optimized recipes. Breathwork and recovery protocols. Everything connected to your Bio Age trajectory.</p>
+          </div>
+
+          <!-- GLP-1 -->
+          <div class="feature-card fade-in">
+            <div class="feature-tag">Companion</div>
+            <h3>GLP-1 Support Layer</h3>
+            <p>For members on GLP-1 medications, LumLoop provides nutrition guidance, supplement protocols, and biomarker monitoring specifically designed for the GLP-1 journey — muscle preservation, micronutrient support, and metabolic tracking.</p>
+          </div>
+
+          <!-- Marketplace -->
+          <div class="feature-card fade-in">
+            <div class="feature-tag">Commerce</div>
+            <h3>Wellness Marketplace</h3>
+            <p>Recommended products appear when your data says you need them — not when an ad says you do. Supplements, testing kits, devices, and wellness services — all vetted, all contextual, all fulfilled inside the loop.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIFFERENTIATORS -->
+    <section class="section section-compare" id="science">
+      <div class="container">
+        <div class="section-label fade-in">Why LumLoop</div>
+        <h2 class="section-headline fade-in">
+          Not another<br class="desktop-only">
+          <span class="text-accent">wellness dashboard.</span>
+        </h2>
+        <p class="section-body fade-in">
+          The market is full of tools that show you data but never tell you what to do with it. LumLoop is different because it doesn't stop at measurement. It acts.
+        </p>
+
+        <div class="compare-table fade-in">
+          <div class="compare-header">
+            <div class="compare-label"></div>
+            <div class="compare-col">Wearables<br><span class="compare-sub">WHOOP, Oura</span></div>
+            <div class="compare-col">Testing<br><span class="compare-sub">Function, InsideTracker</span></div>
+            <div class="compare-col">Supplements<br><span class="compare-sub">AG1, Momentous</span></div>
+            <div class="compare-col compare-highlight">LumLoop</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-label">Real-time biometric tracking</div>
+            <div class="compare-col"><span class="check">&#10003;</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col compare-highlight"><span class="check">&#10003;</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-label">Biomarker testing + interpretation</div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="check">&#10003;</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col compare-highlight"><span class="check">&#10003;</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-label">Personalized supplement protocols</div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="partial">~</span></div>
+            <div class="compare-col"><span class="check">&#10003;</span></div>
+            <div class="compare-col compare-highlight"><span class="check">&#10003;</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-label">AI wellness coaching</div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col compare-highlight"><span class="check">&#10003;</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-label">Integrated fulfillment + commerce</div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="partial">~</span></div>
+            <div class="compare-col compare-highlight"><span class="check">&#10003;</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-label">Closed-loop outcome measurement</div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col"><span class="cross">—</span></div>
+            <div class="compare-col compare-highlight"><span class="check">&#10003;</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOCIAL PROOF -->
+    <section class="section section-proof">
+      <div class="container">
+        <div class="section-label fade-in">Built For</div>
+        <h2 class="section-headline fade-in">
+          Ambitious professionals who<br class="desktop-only">
+          <span class="text-accent">take health seriously.</span>
+        </h2>
+        <div class="audience-grid fade-in">
+          <div class="audience-card">
+            <div class="audience-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            </div>
+            <h3>Executives & Founders</h3>
+            <p>Optimize cognitive performance and longevity with data-driven protocols that fit a demanding schedule.</p>
+          </div>
+          <div class="audience-card">
+            <div class="audience-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <h3>Biohackers & Athletes</h3>
+            <p>Go beyond tracking. Connect your wearable data to actionable supplement and recovery protocols.</p>
+          </div>
+          <div class="audience-card">
+            <div class="audience-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <h3>Longevity-Focused</h3>
+            <p>Track your Biological Wellness Age and see whether your interventions are actually reversing the clock.</p>
+          </div>
+          <div class="audience-card">
+            <div class="audience-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </div>
+            <h3>GLP-1 Users</h3>
+            <p>Comprehensive support for the GLP-1 journey — nutrition protocols, muscle preservation, and metabolic monitoring.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING / WAITLIST -->
+    <section class="section section-pricing" id="pricing">
+      <div class="container">
+        <div class="section-label fade-in">Membership</div>
+        <h2 class="section-headline fade-in">
+          One membership.<br class="desktop-only">
+          <span class="text-accent">Your entire wellness stack.</span>
+        </h2>
+        <div class="pricing-cards fade-in">
+          <div class="pricing-card">
+            <div class="pricing-tier">Essential</div>
+            <div class="pricing-amount"><span class="pricing-currency">$</span>29<span class="pricing-period">/mo</span></div>
+            <ul class="pricing-features">
+              <li>Biological Wellness Age tracking</li>
+              <li>AI-personalized daily protocols</li>
+              <li>Supplement stack management</li>
+              <li>Nutrition recommendations</li>
+              <li>Wearable data integration</li>
+              <li>AI wellness coach</li>
+            </ul>
+            <a href="#waitlist" class="btn btn-outline btn-block">Join Waitlist</a>
+          </div>
+          <div class="pricing-card pricing-card-featured">
+            <div class="pricing-badge">Most Popular</div>
+            <div class="pricing-tier">Premium</div>
+            <div class="pricing-amount"><span class="pricing-currency">$</span>79<span class="pricing-period">/mo</span></div>
+            <ul class="pricing-features">
+              <li>Everything in Essential</li>
+              <li>Quarterly biomarker testing</li>
+              <li>Advanced AI protocol adjustments</li>
+              <li>GLP-1 companion layer</li>
+              <li>Marketplace priority access</li>
+              <li>Priority support</li>
+            </ul>
+            <a href="#waitlist" class="btn btn-primary btn-block">Join Waitlist</a>
+          </div>
+          <div class="pricing-card">
+            <div class="pricing-tier">Concierge</div>
+            <div class="pricing-amount"><span class="pricing-currency">$</span>249<span class="pricing-period">/mo</span></div>
+            <ul class="pricing-features">
+              <li>Everything in Premium</li>
+              <li>Monthly biomarker testing</li>
+              <li>1:1 wellness strategy calls</li>
+              <li>Custom supplement formulation</li>
+              <li>Partner clinic access</li>
+              <li>White-glove onboarding</li>
+            </ul>
+            <a href="#waitlist" class="btn btn-outline btn-block">Join Waitlist</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section section-faq">
+      <div class="container container-narrow">
+        <div class="section-label fade-in">FAQ</div>
+        <h2 class="section-headline fade-in">Common questions.</h2>
+        <div class="faq-list">
+          <details class="faq-item fade-in">
+            <summary>What makes LumLoop different from WHOOP or Oura?</summary>
+            <p>WHOOP and Oura are excellent at measuring biometric data, but they stop at measurement. LumLoop takes that data — along with biomarker results, supplement protocols, and nutrition — and closes the loop by recommending, fulfilling, and then measuring whether your interventions actually worked. It's the difference between a dashboard and an operating system.</p>
+          </details>
+          <details class="faq-item fade-in">
+            <summary>What is Biological Wellness Age?</summary>
+            <p>It's a composite score derived from five biological subsystems — cardiovascular, sleep, metabolic, immune, and muscular — based on your biomarker data and daily health metrics. Unlike chronological age, it changes based on your interventions. It's your measurable north star for whether your wellness protocols are working.</p>
+          </details>
+          <details class="faq-item fade-in">
+            <summary>Do I need to buy supplements through LumLoop?</summary>
+            <p>No. LumLoop recommends personalized supplement protocols based on your data. You can source them anywhere. But our integrated marketplace makes it effortless — one tap to order exactly what your protocol requires, from verified suppliers.</p>
+          </details>
+          <details class="faq-item fade-in">
+            <summary>How does the AI wellness coach work?</summary>
+            <p>The coach has full context on your biomarkers, supplement stack, sleep data, and wellness goals. It generates evidence-based, personalized guidance — not generic responses. Ask it anything: why a supplement was recommended, how to improve your sleep score, what to eat before a workout.</p>
+          </details>
+          <details class="faq-item fade-in">
+            <summary>What markets is LumLoop available in?</summary>
+            <p>We're launching in Singapore, Malaysia, and the UAE — markets with high-income professionals who invest significantly in health optimization. Expansion to additional markets is planned for 2027.</p>
+          </details>
+          <details class="faq-item fade-in">
+            <summary>Is my health data private?</summary>
+            <p>Absolutely. All health data is encrypted at rest and in transit. We never sell user data. You own your data and can export or delete it at any time. We comply with PDPA (Singapore), PDPA (Malaysia), and relevant UAE data protection regulations.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- WAITLIST CTA -->
+    <section class="section section-cta" id="waitlist">
+      <div class="container container-narrow">
+        <h2 class="cta-headline fade-in">Close the loop on<br>your wellness.</h2>
+        <p class="cta-body fade-in">Join the waitlist for early access. Be among the first to experience a wellness system that doesn't just measure — it acts, fulfills, and measures again.</p>
+        <form class="waitlist-form fade-in" onsubmit="handleWaitlist(event)">
+          <div class="form-row">
+            <input type="email" placeholder="Your email address" required class="form-input" id="waitlist-email">
+            <button type="submit" class="btn btn-primary btn-lg">Get Early Access</button>
+          </div>
+          <p class="form-note">No spam. No credit card required. Early access members get founding member pricing.</p>
+        </form>
+        <div id="waitlist-success" class="waitlist-success" style="display:none">
+          <p>You're on the list. We'll be in touch soon.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#" class="logo" aria-label="LumLoop home">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+          </svg>
+          <span class="logo-text">LumLoop</span>
+        </a>
+        <p class="footer-tagline">The AI wellness operating system.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="#how-it-works">How It Works</a>
+          <a href="#platform">Platform</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#waitlist">Waitlist</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#science">Science</a>
+          <a href="mailto:hello@lumloop.com">Contact</a>
+          <a href="#">Careers</a>
+          <a href="#">Press</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Data Security</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 LumLoop. All rights reserved.</p>
+        <p class="footer-markets">Singapore &middot; Malaysia &middot; UAE</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
