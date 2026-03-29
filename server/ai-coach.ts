@@ -83,7 +83,7 @@ export async function generateCoachResponse(
 
   try {
     const response = await client.messages.create({
-      model: "claude_sonnet_4_6",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 512,
       system: SYSTEM_PROMPT + userContext,
       messages,
